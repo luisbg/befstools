@@ -14,8 +14,8 @@
 
 @SET_MAKE@
 
-# dosfstools manpages/Makefile.am
-# Copyright (C) 2015  Andreas Bombe <aeb@debian.org>
+# befstools manpages/Makefile.am
+# Copyright (C) 2016  Luis de Bethencourt <luisbg@osg.samsung.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -108,7 +108,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
-CONFIG_CLEAN_FILES = mkfs.fat.8 fsck.fat.8 fatlabel.8
+CONFIG_CLEAN_FILES = mkfs.befs.8
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -161,8 +161,7 @@ am__installdirs = "$(DESTDIR)$(man8dir)"
 NROFF = nroff
 MANS = $(man_MANS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
-am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/fatlabel.8.in \
-	$(srcdir)/fsck.fat.8.in $(srcdir)/mkfs.fat.8.in
+am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/mkfs.befs.8.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -259,7 +258,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-man_MANS = fsck.fat.8 mkfs.fat.8 fatlabel.8
+man_MANS = mkfs.befs.8
 all: all-am
 
 .SUFFIXES:
@@ -292,11 +291,7 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-mkfs.fat.8: $(top_builddir)/config.status $(srcdir)/mkfs.fat.8.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-fsck.fat.8: $(top_builddir)/config.status $(srcdir)/fsck.fat.8.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-fatlabel.8: $(top_builddir)/config.status $(srcdir)/fatlabel.8.in
+mkfs.befs.8: $(top_builddir)/config.status $(srcdir)/mkfs.befs.8.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-man8: $(man_MANS)
 	@$(NORMAL_INSTALL)
@@ -505,22 +500,10 @@ uninstall-man: uninstall-man8
 
 
 @COMPAT_SYMLINKS_TRUE@install-data-hook:
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f fatlabel.8 dosfslabel.8
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f fsck.fat.8 dosfsck.8
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f fsck.fat.8 fsck.msdos.8
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f fsck.fat.8 fsck.vfat.8
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f mkfs.fat.8 mkdosfs.8
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f mkfs.fat.8 mkfs.msdos.8
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f mkfs.fat.8 mkfs.vfat.8
+@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f mkfs.befs.8 mkbefs.8
 
 @COMPAT_SYMLINKS_TRUE@uninstall-hook:
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(mandir)/man8/dosfslabel.8
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(mandir)/man8/dosfsck.8
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(mandir)/man8/fsck.msdos.8
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(mandir)/man8/fsck.vfat.8
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(mandir)/man8/mkdosfs.8
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(mandir)/man8/mkfs.msdos.8
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(mandir)/man8/mkfs.vfat.8
+@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(mandir)/man8/mkfs.befs.8
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

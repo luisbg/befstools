@@ -1,5 +1,5 @@
-# dosfstools src/Makefile.am
-# Copyright (C) 2015  Andreas Bombe <aeb@debian.org>
+# befstools src/Makefile.am
+# Copyright (C) 2016  Luis de Bethencourt <luisbg@osg.samsung.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,24 +17,17 @@
 AM_CFLAGS = -Wall -Wextra -Wno-sign-compare -Wno-missing-field-initializers \
 	    -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings
 
-sbin_PROGRAMS = fsck.fat mkfs.fat fatlabel
+sbin_PROGRAMS = mkfs.befs
 noinst_PROGRAMS = testdevinfo
-
-fscklabel_common_sources = boot.c boot.h check.c check.h common.c common.h \
-			   fat.c fat.h file.c file.h io.c io.h lfn.c lfn.h \
-			   charconv.c charconv.h msdos_fs.h \
-			   fsck.fat.h endian_compat.h
-fsck_fat_SOURCES = fsck.fat.c $(fscklabel_common_sources)
-fatlabel_SOURCES = fatlabel.c $(fscklabel_common_sources)
 
 mkfs_common_sources = device_info.c device_info.h \
 		      blkdev/blkdev.c blkdev/blkdev.h \
 		      endian_compat.h \
 		      blkdev/linux_version.c blkdev/linux_version.h
-mkfs_fat_SOURCES  = mkfs.fat.c msdos_fs.h $(mkfs_common_sources)
-mkfs_fat_CPPFLAGS = -I$(srcdir)/blkdev
-mkfs_fat_CFLAGS   = $(AM_CFLAGS) $(UDEV_CFLAGS)
-mkfs_fat_LDFLAGS  = $(UDEV_LIBS)
+mkfs_befs_SOURCES  = mkfs.befs.c befs.h $(mkfs_common_sources)
+mkfs_befs_CPPFLAGS = -I$(srcdir)/blkdev
+mkfs_befs_CFLAGS   = $(AM_CFLAGS) $(UDEV_CFLAGS)
+mkfs_befs_LDFLAGS  = $(UDEV_LIBS)
 
 testdevinfo_SOURCES  = testdevinfo.c $(mkfs_common_sources)
 testdevinfo_CPPFLAGS = -I$(srcdir)/blkdev
@@ -44,20 +37,7 @@ testdevinfo_LDFLAGS  = $(UDEV_LIBS)
 
 if COMPAT_SYMLINKS
 install-exec-hook:
-	cd $(DESTDIR)$(sbindir) && $(LN_S) -f fatlabel dosfslabel
-	cd $(DESTDIR)$(sbindir) && $(LN_S) -f fsck.fat dosfsck
-	cd $(DESTDIR)$(sbindir) && $(LN_S) -f fsck.fat fsck.msdos
-	cd $(DESTDIR)$(sbindir) && $(LN_S) -f fsck.fat fsck.vfat
-	cd $(DESTDIR)$(sbindir) && $(LN_S) -f mkfs.fat mkdosfs
-	cd $(DESTDIR)$(sbindir) && $(LN_S) -f mkfs.fat mkfs.msdos
-	cd $(DESTDIR)$(sbindir) && $(LN_S) -f mkfs.fat mkfs.vfat
+	cd $(DESTDIR)$(sbindir) && $(LN_S) -f mkfs.befs mkbefs
 
 uninstall-hook:
-	$(RM) $(DESTDIR)$(sbindir)/dosfslabel
-	$(RM) $(DESTDIR)$(sbindir)/dosfsck
-	$(RM) $(DESTDIR)$(sbindir)/fsck.msdos
-	$(RM) $(DESTDIR)$(sbindir)/fsck.vfat
-	$(RM) $(DESTDIR)$(sbindir)/mkdosfs
-	$(RM) $(DESTDIR)$(sbindir)/mkfs.msdos
-	$(RM) $(DESTDIR)$(sbindir)/mkfs.vfat
 endif

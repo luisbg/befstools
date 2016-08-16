@@ -1,4 +1,7 @@
-# configure.ac for dosfstools
+# configure.ac for befstools
+# Copyright (C) 2016  Luis de Bethencourt <luisbg@osg.samsung.com>
+#
+# based on dosfstools/configure.ac
 # Copyright (C) 2015  Andreas Bombe <aeb@debian.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,8 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-AC_INIT([dosfstools], [4.0])
-AC_SUBST([RELEASE_DATE], [2016-05-06])
+AC_INIT([befstools], [0.0])
+AC_SUBST([RELEASE_DATE], [2016-08-16])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 AC_ARG_ENABLE([compat-symlinks],
@@ -62,6 +65,5 @@ fi
 AC_SEARCH_LIBS(iconv_open, iconv)
 
 AC_CONFIG_FILES([Makefile src/Makefile src/version.h
-		 manpages/Makefile manpages/mkfs.fat.8
-		 manpages/fsck.fat.8 manpages/fatlabel.8])
+		 manpages/Makefile manpages/mkfs.befs.8])
 AC_OUTPUT

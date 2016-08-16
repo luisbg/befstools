@@ -1,5 +1,5 @@
-# dosfstools manpages/Makefile.am
-# Copyright (C) 2015  Andreas Bombe <aeb@debian.org>
+# befstools manpages/Makefile.am
+# Copyright (C) 2016  Luis de Bethencourt <luisbg@osg.samsung.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,25 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-man_MANS = fsck.fat.8 mkfs.fat.8 fatlabel.8
+man_MANS = mkfs.befs.8
 
 
 if COMPAT_SYMLINKS
 install-data-hook:
-	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f fatlabel.8 dosfslabel.8
-	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f fsck.fat.8 dosfsck.8
-	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f fsck.fat.8 fsck.msdos.8
-	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f fsck.fat.8 fsck.vfat.8
-	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f mkfs.fat.8 mkdosfs.8
-	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f mkfs.fat.8 mkfs.msdos.8
-	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f mkfs.fat.8 mkfs.vfat.8
+	cd $(DESTDIR)$(mandir)/man8 && $(LN_S) -f mkfs.befs.8 mkbefs.8
 
 uninstall-hook:
-	$(RM) $(DESTDIR)$(mandir)/man8/dosfslabel.8
-	$(RM) $(DESTDIR)$(mandir)/man8/dosfsck.8
-	$(RM) $(DESTDIR)$(mandir)/man8/fsck.msdos.8
-	$(RM) $(DESTDIR)$(mandir)/man8/fsck.vfat.8
-	$(RM) $(DESTDIR)$(mandir)/man8/mkdosfs.8
-	$(RM) $(DESTDIR)$(mandir)/man8/mkfs.msdos.8
-	$(RM) $(DESTDIR)$(mandir)/man8/mkfs.vfat.8
+	$(RM) $(DESTDIR)$(mandir)/man8/mkfs.befs.8
 endif

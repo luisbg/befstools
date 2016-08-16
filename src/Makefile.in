@@ -14,8 +14,8 @@
 
 @SET_MAKE@
 
-# dosfstools src/Makefile.am
-# Copyright (C) 2015  Andreas Bombe <aeb@debian.org>
+# befstools src/Makefile.am
+# Copyright (C) 2016  Luis de Bethencourt <luisbg@osg.samsung.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-sbin_PROGRAMS = fsck.fat$(EXEEXT) mkfs.fat$(EXEEXT) fatlabel$(EXEEXT)
+sbin_PROGRAMS = mkfs.befs$(EXEEXT)
 noinst_PROGRAMS = testdevinfo$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -115,29 +115,20 @@ CONFIG_CLEAN_FILES = version.h
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
-am__objects_1 = boot.$(OBJEXT) check.$(OBJEXT) common.$(OBJEXT) \
-	fat.$(OBJEXT) file.$(OBJEXT) io.$(OBJEXT) lfn.$(OBJEXT) \
-	charconv.$(OBJEXT)
-am_fatlabel_OBJECTS = fatlabel.$(OBJEXT) $(am__objects_1)
-fatlabel_OBJECTS = $(am_fatlabel_OBJECTS)
-fatlabel_LDADD = $(LDADD)
-am_fsck_fat_OBJECTS = fsck.fat.$(OBJEXT) $(am__objects_1)
-fsck_fat_OBJECTS = $(am_fsck_fat_OBJECTS)
-fsck_fat_LDADD = $(LDADD)
 am__dirstamp = $(am__leading_dot)dirstamp
-am__objects_2 = mkfs_fat-device_info.$(OBJEXT) \
-	blkdev/mkfs_fat-blkdev.$(OBJEXT) \
-	blkdev/mkfs_fat-linux_version.$(OBJEXT)
-am_mkfs_fat_OBJECTS = mkfs_fat-mkfs.fat.$(OBJEXT) $(am__objects_2)
-mkfs_fat_OBJECTS = $(am_mkfs_fat_OBJECTS)
-mkfs_fat_LDADD = $(LDADD)
-mkfs_fat_LINK = $(CCLD) $(mkfs_fat_CFLAGS) $(CFLAGS) \
-	$(mkfs_fat_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_3 = testdevinfo-device_info.$(OBJEXT) \
+am__objects_1 = mkfs_befs-device_info.$(OBJEXT) \
+	blkdev/mkfs_befs-blkdev.$(OBJEXT) \
+	blkdev/mkfs_befs-linux_version.$(OBJEXT)
+am_mkfs_befs_OBJECTS = mkfs_befs-mkfs.befs.$(OBJEXT) $(am__objects_1)
+mkfs_befs_OBJECTS = $(am_mkfs_befs_OBJECTS)
+mkfs_befs_LDADD = $(LDADD)
+mkfs_befs_LINK = $(CCLD) $(mkfs_befs_CFLAGS) $(CFLAGS) \
+	$(mkfs_befs_LDFLAGS) $(LDFLAGS) -o $@
+am__objects_2 = testdevinfo-device_info.$(OBJEXT) \
 	blkdev/testdevinfo-blkdev.$(OBJEXT) \
 	blkdev/testdevinfo-linux_version.$(OBJEXT)
 am_testdevinfo_OBJECTS = testdevinfo-testdevinfo.$(OBJEXT) \
-	$(am__objects_3)
+	$(am__objects_2)
 testdevinfo_OBJECTS = $(am_testdevinfo_OBJECTS)
 testdevinfo_LDADD = $(LDADD)
 testdevinfo_LINK = $(CCLD) $(testdevinfo_CFLAGS) $(CFLAGS) \
@@ -174,10 +165,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(fatlabel_SOURCES) $(fsck_fat_SOURCES) $(mkfs_fat_SOURCES) \
-	$(testdevinfo_SOURCES)
-DIST_SOURCES = $(fatlabel_SOURCES) $(fsck_fat_SOURCES) \
-	$(mkfs_fat_SOURCES) $(testdevinfo_SOURCES)
+SOURCES = $(mkfs_befs_SOURCES) $(testdevinfo_SOURCES)
+DIST_SOURCES = $(mkfs_befs_SOURCES) $(testdevinfo_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -303,22 +292,15 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Wextra -Wno-sign-compare -Wno-missing-field-initializers \
 	    -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings
 
-fscklabel_common_sources = boot.c boot.h check.c check.h common.c common.h \
-			   fat.c fat.h file.c file.h io.c io.h lfn.c lfn.h \
-			   charconv.c charconv.h msdos_fs.h \
-			   fsck.fat.h endian_compat.h
-
-fsck_fat_SOURCES = fsck.fat.c $(fscklabel_common_sources)
-fatlabel_SOURCES = fatlabel.c $(fscklabel_common_sources)
 mkfs_common_sources = device_info.c device_info.h \
 		      blkdev/blkdev.c blkdev/blkdev.h \
 		      endian_compat.h \
 		      blkdev/linux_version.c blkdev/linux_version.h
 
-mkfs_fat_SOURCES = mkfs.fat.c msdos_fs.h $(mkfs_common_sources)
-mkfs_fat_CPPFLAGS = -I$(srcdir)/blkdev
-mkfs_fat_CFLAGS = $(AM_CFLAGS) $(UDEV_CFLAGS)
-mkfs_fat_LDFLAGS = $(UDEV_LIBS)
+mkfs_befs_SOURCES = mkfs.befs.c befs.h $(mkfs_common_sources)
+mkfs_befs_CPPFLAGS = -I$(srcdir)/blkdev
+mkfs_befs_CFLAGS = $(AM_CFLAGS) $(UDEV_CFLAGS)
+mkfs_befs_LDFLAGS = $(UDEV_LIBS)
 testdevinfo_SOURCES = testdevinfo.c $(mkfs_common_sources)
 testdevinfo_CPPFLAGS = -I$(srcdir)/blkdev
 testdevinfo_CFLAGS = $(AM_CFLAGS) $(UDEV_CFLAGS)
@@ -403,28 +385,20 @@ uninstall-sbinPROGRAMS:
 
 clean-sbinPROGRAMS:
 	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
-
-fatlabel$(EXEEXT): $(fatlabel_OBJECTS) $(fatlabel_DEPENDENCIES) $(EXTRA_fatlabel_DEPENDENCIES) 
-	@rm -f fatlabel$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(fatlabel_OBJECTS) $(fatlabel_LDADD) $(LIBS)
-
-fsck.fat$(EXEEXT): $(fsck_fat_OBJECTS) $(fsck_fat_DEPENDENCIES) $(EXTRA_fsck_fat_DEPENDENCIES) 
-	@rm -f fsck.fat$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(fsck_fat_OBJECTS) $(fsck_fat_LDADD) $(LIBS)
 blkdev/$(am__dirstamp):
 	@$(MKDIR_P) blkdev
 	@: > blkdev/$(am__dirstamp)
 blkdev/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) blkdev/$(DEPDIR)
 	@: > blkdev/$(DEPDIR)/$(am__dirstamp)
-blkdev/mkfs_fat-blkdev.$(OBJEXT): blkdev/$(am__dirstamp) \
+blkdev/mkfs_befs-blkdev.$(OBJEXT): blkdev/$(am__dirstamp) \
 	blkdev/$(DEPDIR)/$(am__dirstamp)
-blkdev/mkfs_fat-linux_version.$(OBJEXT): blkdev/$(am__dirstamp) \
+blkdev/mkfs_befs-linux_version.$(OBJEXT): blkdev/$(am__dirstamp) \
 	blkdev/$(DEPDIR)/$(am__dirstamp)
 
-mkfs.fat$(EXEEXT): $(mkfs_fat_OBJECTS) $(mkfs_fat_DEPENDENCIES) $(EXTRA_mkfs_fat_DEPENDENCIES) 
-	@rm -f mkfs.fat$(EXEEXT)
-	$(AM_V_CCLD)$(mkfs_fat_LINK) $(mkfs_fat_OBJECTS) $(mkfs_fat_LDADD) $(LIBS)
+mkfs.befs$(EXEEXT): $(mkfs_befs_OBJECTS) $(mkfs_befs_DEPENDENCIES) $(EXTRA_mkfs_befs_DEPENDENCIES) 
+	@rm -f mkfs.befs$(EXEEXT)
+	$(AM_V_CCLD)$(mkfs_befs_LINK) $(mkfs_befs_OBJECTS) $(mkfs_befs_LDADD) $(LIBS)
 blkdev/testdevinfo-blkdev.$(OBJEXT): blkdev/$(am__dirstamp) \
 	blkdev/$(DEPDIR)/$(am__dirstamp)
 blkdev/testdevinfo-linux_version.$(OBJEXT): blkdev/$(am__dirstamp) \
@@ -441,22 +415,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/boot.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/charconv.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fat.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fatlabel.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fsck.fat.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lfn.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkfs_fat-device_info.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkfs_fat-mkfs.fat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkfs_befs-device_info.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkfs_befs-mkfs.befs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdevinfo-device_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdevinfo-testdevinfo.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/mkfs_fat-blkdev.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/mkfs_fat-linux_version.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/mkfs_befs-blkdev.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/mkfs_befs-linux_version.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/testdevinfo-blkdev.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/testdevinfo-linux_version.Po@am__quote@
 
@@ -476,61 +440,61 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-mkfs_fat-mkfs.fat.o: mkfs.fat.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -MT mkfs_fat-mkfs.fat.o -MD -MP -MF $(DEPDIR)/mkfs_fat-mkfs.fat.Tpo -c -o mkfs_fat-mkfs.fat.o `test -f 'mkfs.fat.c' || echo '$(srcdir)/'`mkfs.fat.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mkfs_fat-mkfs.fat.Tpo $(DEPDIR)/mkfs_fat-mkfs.fat.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mkfs.fat.c' object='mkfs_fat-mkfs.fat.o' libtool=no @AMDEPBACKSLASH@
+mkfs_befs-mkfs.befs.o: mkfs.befs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT mkfs_befs-mkfs.befs.o -MD -MP -MF $(DEPDIR)/mkfs_befs-mkfs.befs.Tpo -c -o mkfs_befs-mkfs.befs.o `test -f 'mkfs.befs.c' || echo '$(srcdir)/'`mkfs.befs.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mkfs_befs-mkfs.befs.Tpo $(DEPDIR)/mkfs_befs-mkfs.befs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mkfs.befs.c' object='mkfs_befs-mkfs.befs.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -c -o mkfs_fat-mkfs.fat.o `test -f 'mkfs.fat.c' || echo '$(srcdir)/'`mkfs.fat.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o mkfs_befs-mkfs.befs.o `test -f 'mkfs.befs.c' || echo '$(srcdir)/'`mkfs.befs.c
 
-mkfs_fat-mkfs.fat.obj: mkfs.fat.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -MT mkfs_fat-mkfs.fat.obj -MD -MP -MF $(DEPDIR)/mkfs_fat-mkfs.fat.Tpo -c -o mkfs_fat-mkfs.fat.obj `if test -f 'mkfs.fat.c'; then $(CYGPATH_W) 'mkfs.fat.c'; else $(CYGPATH_W) '$(srcdir)/mkfs.fat.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mkfs_fat-mkfs.fat.Tpo $(DEPDIR)/mkfs_fat-mkfs.fat.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mkfs.fat.c' object='mkfs_fat-mkfs.fat.obj' libtool=no @AMDEPBACKSLASH@
+mkfs_befs-mkfs.befs.obj: mkfs.befs.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT mkfs_befs-mkfs.befs.obj -MD -MP -MF $(DEPDIR)/mkfs_befs-mkfs.befs.Tpo -c -o mkfs_befs-mkfs.befs.obj `if test -f 'mkfs.befs.c'; then $(CYGPATH_W) 'mkfs.befs.c'; else $(CYGPATH_W) '$(srcdir)/mkfs.befs.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mkfs_befs-mkfs.befs.Tpo $(DEPDIR)/mkfs_befs-mkfs.befs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mkfs.befs.c' object='mkfs_befs-mkfs.befs.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -c -o mkfs_fat-mkfs.fat.obj `if test -f 'mkfs.fat.c'; then $(CYGPATH_W) 'mkfs.fat.c'; else $(CYGPATH_W) '$(srcdir)/mkfs.fat.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o mkfs_befs-mkfs.befs.obj `if test -f 'mkfs.befs.c'; then $(CYGPATH_W) 'mkfs.befs.c'; else $(CYGPATH_W) '$(srcdir)/mkfs.befs.c'; fi`
 
-mkfs_fat-device_info.o: device_info.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -MT mkfs_fat-device_info.o -MD -MP -MF $(DEPDIR)/mkfs_fat-device_info.Tpo -c -o mkfs_fat-device_info.o `test -f 'device_info.c' || echo '$(srcdir)/'`device_info.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mkfs_fat-device_info.Tpo $(DEPDIR)/mkfs_fat-device_info.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device_info.c' object='mkfs_fat-device_info.o' libtool=no @AMDEPBACKSLASH@
+mkfs_befs-device_info.o: device_info.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT mkfs_befs-device_info.o -MD -MP -MF $(DEPDIR)/mkfs_befs-device_info.Tpo -c -o mkfs_befs-device_info.o `test -f 'device_info.c' || echo '$(srcdir)/'`device_info.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mkfs_befs-device_info.Tpo $(DEPDIR)/mkfs_befs-device_info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device_info.c' object='mkfs_befs-device_info.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -c -o mkfs_fat-device_info.o `test -f 'device_info.c' || echo '$(srcdir)/'`device_info.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o mkfs_befs-device_info.o `test -f 'device_info.c' || echo '$(srcdir)/'`device_info.c
 
-mkfs_fat-device_info.obj: device_info.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -MT mkfs_fat-device_info.obj -MD -MP -MF $(DEPDIR)/mkfs_fat-device_info.Tpo -c -o mkfs_fat-device_info.obj `if test -f 'device_info.c'; then $(CYGPATH_W) 'device_info.c'; else $(CYGPATH_W) '$(srcdir)/device_info.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mkfs_fat-device_info.Tpo $(DEPDIR)/mkfs_fat-device_info.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device_info.c' object='mkfs_fat-device_info.obj' libtool=no @AMDEPBACKSLASH@
+mkfs_befs-device_info.obj: device_info.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT mkfs_befs-device_info.obj -MD -MP -MF $(DEPDIR)/mkfs_befs-device_info.Tpo -c -o mkfs_befs-device_info.obj `if test -f 'device_info.c'; then $(CYGPATH_W) 'device_info.c'; else $(CYGPATH_W) '$(srcdir)/device_info.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mkfs_befs-device_info.Tpo $(DEPDIR)/mkfs_befs-device_info.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device_info.c' object='mkfs_befs-device_info.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -c -o mkfs_fat-device_info.obj `if test -f 'device_info.c'; then $(CYGPATH_W) 'device_info.c'; else $(CYGPATH_W) '$(srcdir)/device_info.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o mkfs_befs-device_info.obj `if test -f 'device_info.c'; then $(CYGPATH_W) 'device_info.c'; else $(CYGPATH_W) '$(srcdir)/device_info.c'; fi`
 
-blkdev/mkfs_fat-blkdev.o: blkdev/blkdev.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_fat-blkdev.o -MD -MP -MF blkdev/$(DEPDIR)/mkfs_fat-blkdev.Tpo -c -o blkdev/mkfs_fat-blkdev.o `test -f 'blkdev/blkdev.c' || echo '$(srcdir)/'`blkdev/blkdev.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_fat-blkdev.Tpo blkdev/$(DEPDIR)/mkfs_fat-blkdev.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/blkdev.c' object='blkdev/mkfs_fat-blkdev.o' libtool=no @AMDEPBACKSLASH@
+blkdev/mkfs_befs-blkdev.o: blkdev/blkdev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_befs-blkdev.o -MD -MP -MF blkdev/$(DEPDIR)/mkfs_befs-blkdev.Tpo -c -o blkdev/mkfs_befs-blkdev.o `test -f 'blkdev/blkdev.c' || echo '$(srcdir)/'`blkdev/blkdev.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_befs-blkdev.Tpo blkdev/$(DEPDIR)/mkfs_befs-blkdev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/blkdev.c' object='blkdev/mkfs_befs-blkdev.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_fat-blkdev.o `test -f 'blkdev/blkdev.c' || echo '$(srcdir)/'`blkdev/blkdev.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_befs-blkdev.o `test -f 'blkdev/blkdev.c' || echo '$(srcdir)/'`blkdev/blkdev.c
 
-blkdev/mkfs_fat-blkdev.obj: blkdev/blkdev.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_fat-blkdev.obj -MD -MP -MF blkdev/$(DEPDIR)/mkfs_fat-blkdev.Tpo -c -o blkdev/mkfs_fat-blkdev.obj `if test -f 'blkdev/blkdev.c'; then $(CYGPATH_W) 'blkdev/blkdev.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/blkdev.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_fat-blkdev.Tpo blkdev/$(DEPDIR)/mkfs_fat-blkdev.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/blkdev.c' object='blkdev/mkfs_fat-blkdev.obj' libtool=no @AMDEPBACKSLASH@
+blkdev/mkfs_befs-blkdev.obj: blkdev/blkdev.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_befs-blkdev.obj -MD -MP -MF blkdev/$(DEPDIR)/mkfs_befs-blkdev.Tpo -c -o blkdev/mkfs_befs-blkdev.obj `if test -f 'blkdev/blkdev.c'; then $(CYGPATH_W) 'blkdev/blkdev.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/blkdev.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_befs-blkdev.Tpo blkdev/$(DEPDIR)/mkfs_befs-blkdev.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/blkdev.c' object='blkdev/mkfs_befs-blkdev.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_fat-blkdev.obj `if test -f 'blkdev/blkdev.c'; then $(CYGPATH_W) 'blkdev/blkdev.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/blkdev.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_befs-blkdev.obj `if test -f 'blkdev/blkdev.c'; then $(CYGPATH_W) 'blkdev/blkdev.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/blkdev.c'; fi`
 
-blkdev/mkfs_fat-linux_version.o: blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_fat-linux_version.o -MD -MP -MF blkdev/$(DEPDIR)/mkfs_fat-linux_version.Tpo -c -o blkdev/mkfs_fat-linux_version.o `test -f 'blkdev/linux_version.c' || echo '$(srcdir)/'`blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_fat-linux_version.Tpo blkdev/$(DEPDIR)/mkfs_fat-linux_version.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/linux_version.c' object='blkdev/mkfs_fat-linux_version.o' libtool=no @AMDEPBACKSLASH@
+blkdev/mkfs_befs-linux_version.o: blkdev/linux_version.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_befs-linux_version.o -MD -MP -MF blkdev/$(DEPDIR)/mkfs_befs-linux_version.Tpo -c -o blkdev/mkfs_befs-linux_version.o `test -f 'blkdev/linux_version.c' || echo '$(srcdir)/'`blkdev/linux_version.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_befs-linux_version.Tpo blkdev/$(DEPDIR)/mkfs_befs-linux_version.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/linux_version.c' object='blkdev/mkfs_befs-linux_version.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_fat-linux_version.o `test -f 'blkdev/linux_version.c' || echo '$(srcdir)/'`blkdev/linux_version.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_befs-linux_version.o `test -f 'blkdev/linux_version.c' || echo '$(srcdir)/'`blkdev/linux_version.c
 
-blkdev/mkfs_fat-linux_version.obj: blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_fat-linux_version.obj -MD -MP -MF blkdev/$(DEPDIR)/mkfs_fat-linux_version.Tpo -c -o blkdev/mkfs_fat-linux_version.obj `if test -f 'blkdev/linux_version.c'; then $(CYGPATH_W) 'blkdev/linux_version.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/linux_version.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_fat-linux_version.Tpo blkdev/$(DEPDIR)/mkfs_fat-linux_version.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/linux_version.c' object='blkdev/mkfs_fat-linux_version.obj' libtool=no @AMDEPBACKSLASH@
+blkdev/mkfs_befs-linux_version.obj: blkdev/linux_version.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_befs-linux_version.obj -MD -MP -MF blkdev/$(DEPDIR)/mkfs_befs-linux_version.Tpo -c -o blkdev/mkfs_befs-linux_version.obj `if test -f 'blkdev/linux_version.c'; then $(CYGPATH_W) 'blkdev/linux_version.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/linux_version.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_befs-linux_version.Tpo blkdev/$(DEPDIR)/mkfs_befs-linux_version.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/linux_version.c' object='blkdev/mkfs_befs-linux_version.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_fat_CPPFLAGS) $(CPPFLAGS) $(mkfs_fat_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_fat-linux_version.obj `if test -f 'blkdev/linux_version.c'; then $(CYGPATH_W) 'blkdev/linux_version.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/linux_version.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_befs-linux_version.obj `if test -f 'blkdev/linux_version.c'; then $(CYGPATH_W) 'blkdev/linux_version.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/linux_version.c'; fi`
 
 testdevinfo-testdevinfo.o: testdevinfo.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testdevinfo_CPPFLAGS) $(CPPFLAGS) $(testdevinfo_CFLAGS) $(CFLAGS) -MT testdevinfo-testdevinfo.o -MD -MP -MF $(DEPDIR)/testdevinfo-testdevinfo.Tpo -c -o testdevinfo-testdevinfo.o `test -f 'testdevinfo.c' || echo '$(srcdir)/'`testdevinfo.c
@@ -803,22 +767,9 @@ uninstall-am: uninstall-sbinPROGRAMS
 
 
 @COMPAT_SYMLINKS_TRUE@install-exec-hook:
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(sbindir) && $(LN_S) -f fatlabel dosfslabel
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(sbindir) && $(LN_S) -f fsck.fat dosfsck
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(sbindir) && $(LN_S) -f fsck.fat fsck.msdos
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(sbindir) && $(LN_S) -f fsck.fat fsck.vfat
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(sbindir) && $(LN_S) -f mkfs.fat mkdosfs
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(sbindir) && $(LN_S) -f mkfs.fat mkfs.msdos
-@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(sbindir) && $(LN_S) -f mkfs.fat mkfs.vfat
+@COMPAT_SYMLINKS_TRUE@	cd $(DESTDIR)$(sbindir) && $(LN_S) -f mkfs.befs mkbefs
 
 @COMPAT_SYMLINKS_TRUE@uninstall-hook:
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(sbindir)/dosfslabel
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(sbindir)/dosfsck
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(sbindir)/fsck.msdos
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(sbindir)/fsck.vfat
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(sbindir)/mkdosfs
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(sbindir)/mkfs.msdos
-@COMPAT_SYMLINKS_TRUE@	$(RM) $(DESTDIR)$(sbindir)/mkfs.vfat
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

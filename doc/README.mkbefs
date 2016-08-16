@@ -1,0 +1,13 @@
+mkbefs - Make BeOS filesystem utility.
+
+I am writing this as a first step towards BeFS write support in Linux. To
+avoid having to boot Haiku OS just to create/edit data for that system.
+
+Also this could serve as educational company to the book:
+"Practical File System Design: The Be File System" by Dominic Giampaolo
+
+The code is derived from Andreas Bombe's mkdosfs, which is derived from
+Remy Card's mke2fs utility - I used this as a framework, although all of the
+filesystem specific stuff was removed and the BeOS file system stuff inserted.
+I believe originally mke2fs was based on Linus' mkfs code, hence the
+acknowledgements in the source code.

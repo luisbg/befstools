@@ -183,8 +183,8 @@ ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
 DIST_SUBDIRS = $(SUBDIRS)
-am__DIST_COMMON = $(srcdir)/Makefile.in COPYING ChangeLog NEWS README \
-	TODO compile depcomp install-sh missing
+am__DIST_COMMON = $(srcdir)/Makefile.in COPYING ChangeLog README TODO \
+	compile depcomp install-sh missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -323,14 +323,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = src manpages
-dist_doc_DATA = doc/ANNOUNCE.mkdosfs \
-		doc/ChangeLog.dosfsck \
-		doc/ChangeLog.dosfstools-2.x \
-		doc/ChangeLog.mkdosfs \
-		doc/README.dosfsck \
-		doc/README.dosfstools-2.x \
-		doc/README.mkdosfs \
-		doc/TODO.dosfstools-2.x
+dist_doc_DATA = doc/README.mkbefs
 
 all: all-recursive
 

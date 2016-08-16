@@ -1,6 +1,6 @@
-.\" fatlabel.8 - manpage for fatlabel
+.\" mkfs.befs.8 - manpage for mkfs.befs
 .\"
-.\" Copyright (C) 2006-2014 Daniel Baumann <daniel@debian.org>
+.\" Copyright (C) 2016 Luis de Bethencourt <luisbg@osg.samsung.com>
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU General Public License as published by
@@ -19,47 +19,41 @@
 .\" can be found in /usr/share/common-licenses/GPL-3 file.
 .\"
 .\"
-.TH FATLABEL 8 2015\-04\-16 "dosfstools @PACKAGE_VERSION@"
+.TH MKFS.BEFS 8 2016\-08\-16 "befstools @PACKAGE_VERSION@"
 .SH NAME
-\fBfatlabel\fR \- set or get MS\-DOS filesystem label
+\fBmkfs.befs\fR \- create a BeOS filesystem under Linux
 .\" ----------------------------------------------------------------------------
 .SH SYNOPSIS
-\fBfatlabel\fR \fIDEVICE\fR [\fILABEL\fR]
+\fBmkfs.befs\fR [\fIOPTIONS\fR] \fIDEVICE\fR
 .\" ----------------------------------------------------------------------------
 .SH DESCRIPTION
-\fBfatlabel\fR set or gets a MS\-DOS filesystem label from a given device.
-.PP
-If \fILABEL\fR is omitted, then the label name of the specified device is
-written on the standard output.
-A label can't be longer than 11 bytes.
+\fBmkfs.befs\fR is used to create a BeOS filesystem under Linux on a device
+(usually a disk partition).
+\fIDEVICE\fR is the special file corresponding to the device (e.g. /dev/sdXX).
 .\" ----------------------------------------------------------------------------
 .SH OPTIONS
-.IP "\fB\-h\fR, \fB\-\-help\fR" 4
-Displays a help message.
-.IP "\fB\-V\fR, \fB\-\-version\fR" 4
-Shows version.
+mounted through a loop device.
+.IP "\fB\-n\fR \fIVOLUME-NAME\fR" 4
+Sets the volume name (label) of the filesystem.
+The volume name can be up to 32 characters long.
+The default is "befs".
+.IP "\fB\-v\fR" 4
+Verbose execution.
+.IP "\fB\-\-help\fR" 4
+Display option summary and exit.
+.\" ----------------------------------------------------------------------------
+.SH BUGS
+\fBmkfs.befs\fR can not create boot-able filesystems.
+This isn't as easy as you might think at first glance for various reasons.
+\fBmkfs.befs\fR simply will not support it ;)
 .\" ----------------------------------------------------------------------------
 .SH SEE ALSO
-\fBfsck.fat\fR(8)
-.br
 \fBmkfs.fat\fR(8)
-.\" ----------------------------------------------------------------------------
-.SH HOMEPAGE
-The home for the \fBdosfstools\fR project is its
-.UR https://github.com/dosfstools/dosfstools
-GitHub project page
-.UE .
+.br
+\fBmkfs.ext4\fR(8)
 .\" ----------------------------------------------------------------------------
 .SH AUTHORS
-\fBdosfstools\fR were written by
-.MT werner.almesberger@\:lrc.di.epfl.ch
-Werner Almesberger
-.ME ,
-.MT Roman.Hodek@\:informatik.\:uni-erlangen.de
-Roman Hodek
-.ME ,
-and others.
-The current maintainer is
-.MT aeb@\:debian.org
-Andreas Bombe
+\fBbefstools\fR was written by
+.MT luisbg@\:osg.samsung.com
+Luis de Bethencourt
 .ME .

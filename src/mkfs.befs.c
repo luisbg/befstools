@@ -1,4 +1,4 @@
-/* mkfs.fat.c - utility to create FAT/MS-DOS filesystems
+/* mkfs.befs.c - utility to create BeOS filesystems
 
    Copyright (C) 1991 Linus Torvalds <torvalds@klaava.helsinki.fi>
    Copyright (C) 1992-1993 Remy Card <card@masi.ibp.fr>
@@ -7,6 +7,7 @@
    Copyright (C) 1998-2005 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
    Copyright (C) 2008-2014 Daniel Baumann <mail@daniel-baumann.ch>
    Copyright (C) 2015-2016 Andreas Bombe <aeb@debian.org>
+   Copyright (C) 2016 Luis de Bethencourt <luisbg@osg.samsung.com>
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,25 +26,13 @@
    can be found in /usr/share/common-licenses/GPL-3 file.
 */
 
-/* Description: Utility to allow an MS-DOS filesystem to be created
+/* Description: Utility to allow a BeOS filesystem to be created
    under Linux.  A lot of the basic structure of this program has been
    borrowed from Remy Card's "mke2fs" code.
 
-   As far as possible the aim here is to make the "mkfs.fat" command
-   look almost identical to the other Linux filesystem make utilties,
-   eg bad blocks are still specified as blocks, not sectors, but when
-   it comes down to it, DOS is tied to the idea of a sector (512 bytes
-   as a rule), and not the block.  For example the boot block does not
-   occupy a full cluster.
-
-   Fixes/additions May 1998 by Roman Hodek
-   <Roman.Hodek@informatik.uni-erlangen.de>:
-   - Atari format support
-   - New options -A, -S, -C
-   - Support for filesystems > 2GB
-   - FAT32 support */
-
-/* Include the header files */
+   As far as possible the aim here is to make the "mkfs.befs" command
+   look almost identical to the other Linux filesystem make utilties.
+*/
 
 #include "version.h"
 
@@ -63,7 +52,7 @@
 #include <getopt.h>
 #include "endian_compat.h"
 
-#include "msdos_fs.h"
+#include "befs.h"
 #include "device_info.h"
 
 
