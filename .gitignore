@@ -1,0 +1,15 @@
+Makefile
+config.log
+config.status
+manpages/Makefile
+manpages/mkfs.befs.8
+src/.deps/
+src/Makefile
+src/blkdev/.deps/
+src/blkdev/.dirstamp
+src/blkdev/*.o
+src/mkfs.befs
+src/*.o
+src/testdevinfo
+src/version.h
+autom4te.cache
