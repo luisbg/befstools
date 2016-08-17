@@ -102,7 +102,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-sbin_PROGRAMS = mkfs.befs$(EXEEXT)
+sbin_PROGRAMS = mkfs.befs$(EXEEXT) befslabel$(EXEEXT)
 noinst_PROGRAMS = testdevinfo$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -115,6 +115,10 @@ CONFIG_CLEAN_FILES = version.h
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
+am_befslabel_OBJECTS = befslabel.$(OBJEXT) common.$(OBJEXT) \
+	io.$(OBJEXT) boot.$(OBJEXT) fat.$(OBJEXT)
+befslabel_OBJECTS = $(am_befslabel_OBJECTS)
+befslabel_LDADD = $(LDADD)
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = mkfs_befs-device_info.$(OBJEXT) \
 	blkdev/mkfs_befs-blkdev.$(OBJEXT) \
@@ -165,8 +169,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(mkfs_befs_SOURCES) $(testdevinfo_SOURCES)
-DIST_SOURCES = $(mkfs_befs_SOURCES) $(testdevinfo_SOURCES)
+SOURCES = $(befslabel_SOURCES) $(mkfs_befs_SOURCES) \
+	$(testdevinfo_SOURCES)
+DIST_SOURCES = $(befslabel_SOURCES) $(mkfs_befs_SOURCES) \
+	$(testdevinfo_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -280,7 +286,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -301,6 +306,9 @@ mkfs_befs_SOURCES = mkfs.befs.c befs.h $(mkfs_common_sources)
 mkfs_befs_CPPFLAGS = -I$(srcdir)/blkdev
 mkfs_befs_CFLAGS = $(AM_CFLAGS) $(UDEV_CFLAGS)
 mkfs_befs_LDFLAGS = $(UDEV_LIBS)
+befslabel_SOURCES = befslabel.c common.c common.h fsck.befs.h befs.h io.c \
+		    io.h boot.c boot.h fat.c fat.h
+
 testdevinfo_SOURCES = testdevinfo.c $(mkfs_common_sources)
 testdevinfo_CPPFLAGS = -I$(srcdir)/blkdev
 testdevinfo_CFLAGS = $(AM_CFLAGS) $(UDEV_CFLAGS)
@@ -385,6 +393,10 @@ uninstall-sbinPROGRAMS:
 
 clean-sbinPROGRAMS:
 	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
+
+befslabel$(EXEEXT): $(befslabel_OBJECTS) $(befslabel_DEPENDENCIES) $(EXTRA_befslabel_DEPENDENCIES) 
+	@rm -f befslabel$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(befslabel_OBJECTS) $(befslabel_LDADD) $(LIBS)
 blkdev/$(am__dirstamp):
 	@$(MKDIR_P) blkdev
 	@: > blkdev/$(am__dirstamp)
@@ -415,6 +427,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/befslabel.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/boot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkfs_befs-device_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkfs_befs-mkfs.befs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdevinfo-device_info.Po@am__quote@
