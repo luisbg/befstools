@@ -85,7 +85,6 @@ void get_fat(FAT_ENTRY * entry, void *fat, uint32_t cluster, DOS_FS * fs)
 void read_fat(DOS_FS * fs)
 {
     int eff_size, alloc_size;
-    uint32_t i;
     void *first, *second = NULL;
     int first_ok, second_ok;
     uint32_t total_num_clusters;
@@ -157,114 +156,6 @@ void read_fat(DOS_FS * fs)
 
     fs->cluster_owner = alloc(total_num_clusters * sizeof(DOS_FILE *));
     memset(fs->cluster_owner, 0, (total_num_clusters * sizeof(DOS_FILE *)));
-
-    /* Truncate any cluster chains that link to something out of range */
-    for (i = 2; i < fs->data_clusters + 2; i++) {
-	FAT_ENTRY curEntry;
-	get_fat(&curEntry, fs->fat, i, fs);
-	if (curEntry.value == 1) {
-	    printf("Cluster %ld out of range (1). Setting to EOF.\n",
-		   (long)(i - 2));
-	    set_fat(fs, i, -1);
-	}
-	if (curEntry.value >= fs->data_clusters + 2 &&
-	    (curEntry.value < FAT_MIN_BAD(fs))) {
-	    printf("Cluster %ld out of range (%ld > %ld). Setting to EOF.\n",
-		   (long)(i - 2), (long)curEntry.value,
-		   (long)(fs->data_clusters + 2 - 1));
-	    set_fat(fs, i, -1);
-	}
-    }
-}
-
-/**
- * Update the FAT entry for a specified cluster
- * (i.e., change the cluster it links to).
- * Queue a command to write out this change.
- *
- * @param[in,out]   fs          Information about the filesystem
- * @param[in]	    cluster     Cluster to change
- * @param[in]       new	        Cluster to link to
- *				Special values:
- *				   0 == free cluster
- *				  -1 == end-of-chain
- *				  -2 == bad cluster
- */
-void set_fat(DOS_FS * fs, uint32_t cluster, int32_t new)
-{
-    unsigned char *data = NULL;
-    int size;
-    off_t offs;
-
-    if (cluster > fs->data_clusters + 1) {
-	die("Internal error: cluster out of range in set_fat() (%lu > %lu).",
-		(unsigned long)cluster, (unsigned long)(fs->data_clusters + 1));
-    }
-
-    if (new == -1)
-	new = FAT_EOF(fs);
-    else if ((long)new == -2)
-	new = FAT_BAD(fs);
-    else if (new > fs->data_clusters + 1) {
-	die("Internal error: new cluster out of range in set_fat() (%lu > %lu).",
-		(unsigned long)new, (unsigned long)(fs->data_clusters + 1));
-    }
-
-    switch (fs->fat_bits) {
-    case 12:
-	data = fs->fat + cluster * 3 / 2;
-	offs = fs->fat_start + cluster * 3 / 2;
-	if (cluster & 1) {
-	    FAT_ENTRY prevEntry;
-	    get_fat(&prevEntry, fs->fat, cluster - 1, fs);
-	    data[0] = ((new & 0xf) << 4) | (prevEntry.value >> 8);
-	    data[1] = new >> 4;
-	} else {
-	    FAT_ENTRY subseqEntry;
-	    if (cluster != fs->data_clusters + 1)
-		get_fat(&subseqEntry, fs->fat, cluster + 1, fs);
-	    else
-		subseqEntry.value = 0;
-	    data[0] = new & 0xff;
-	    data[1] = (new >> 8) | ((0xff & subseqEntry.value) << 4);
-	}
-	size = 2;
-	break;
-    case 16:
-	data = fs->fat + cluster * 2;
-	offs = fs->fat_start + cluster * 2;
-	*(unsigned short *)data = htole16(new);
-	size = 2;
-	break;
-    case 32:
-	{
-	    FAT_ENTRY curEntry;
-	    get_fat(&curEntry, fs->fat, cluster, fs);
-
-	    data = fs->fat + cluster * 4;
-	    offs = fs->fat_start + cluster * 4;
-	    /* According to M$, the high 4 bits of a FAT32 entry are reserved and
-	     * are not part of the cluster number. So we never touch them. */
-	    *(uint32_t *)data = htole32((new & 0xfffffff) |
-					     (curEntry.reserved << 28));
-	    size = 4;
-	}
-	break;
-    default:
-	die("Bad FAT entry size: %d bits.", fs->fat_bits);
-    }
-    fs_write(offs, size, data);
-    if (fs->nfats > 1) {
-	fs_write(offs + fs->fat_size, size, data);
-    }
-}
-
-int bad_cluster(DOS_FS * fs, uint32_t cluster)
-{
-    FAT_ENTRY curEntry;
-    get_fat(&curEntry, fs->fat, cluster, fs);
-
-    return FAT_IS_BAD(fs, curEntry.value);
 }
 
 /**
@@ -295,124 +186,10 @@ off_t cluster_start(DOS_FS * fs, uint32_t cluster)
     return fs->data_start + ((off_t)cluster - 2) * (uint64_t)fs->cluster_size;
 }
 
-/**
- * Update internal bookkeeping to show that the specified cluster belongs
- * to the specified dentry.
- *
- * @param[in,out]   fs          Information about the filesystem
- * @param[in]	    cluster     Cluster being assigned
- * @param[in]	    owner       Information on dentry that owns this cluster
- *                              (may be NULL)
- */
-void set_owner(DOS_FS * fs, uint32_t cluster, DOS_FILE * owner)
-{
-    if (fs->cluster_owner == NULL)
-	die("Internal error: attempt to set owner in non-existent table");
-
-    if (owner && fs->cluster_owner[cluster]
-	&& (fs->cluster_owner[cluster] != owner))
-	die("Internal error: attempt to change file owner");
-    fs->cluster_owner[cluster] = owner;
-}
-
 DOS_FILE *get_owner(DOS_FS * fs, uint32_t cluster)
 {
     if (fs->cluster_owner == NULL)
 	return NULL;
     else
 	return fs->cluster_owner[cluster];
-}
-
-void fix_bad(DOS_FS * fs)
-{
-    uint32_t i;
-
-    if (verbose)
-	printf("Checking for bad clusters.\n");
-    for (i = 2; i < fs->data_clusters + 2; i++) {
-	FAT_ENTRY curEntry;
-	get_fat(&curEntry, fs->fat, i, fs);
-
-	if (!get_owner(fs, i) && !FAT_IS_BAD(fs, curEntry.value))
-	    if (!fs_test(cluster_start(fs, i), fs->cluster_size)) {
-		printf("Cluster %lu is unreadable.\n", (unsigned long)i);
-		set_fat(fs, i, -2);
-	    }
-    }
-}
-
-void reclaim_free(DOS_FS * fs)
-{
-    int reclaimed;
-    uint32_t i;
-
-    if (verbose)
-	printf("Checking for unused clusters.\n");
-    reclaimed = 0;
-    for (i = 2; i < fs->data_clusters + 2; i++) {
-	FAT_ENTRY curEntry;
-	get_fat(&curEntry, fs->fat, i, fs);
-
-	if (!get_owner(fs, i) && curEntry.value &&
-	    !FAT_IS_BAD(fs, curEntry.value)) {
-	    set_fat(fs, i, 0);
-	    reclaimed++;
-	}
-    }
-    if (reclaimed)
-	printf("Reclaimed %d unused cluster%s (%llu bytes).\n", (int)reclaimed,
-	       reclaimed == 1 ? "" : "s",
-	       (unsigned long long)reclaimed * fs->cluster_size);
-}
-
-uint32_t update_free(DOS_FS * fs)
-{
-    uint32_t i;
-    uint32_t free = 0;
-    int do_set = 0;
-
-    for (i = 2; i < fs->data_clusters + 2; i++) {
-	FAT_ENTRY curEntry;
-	get_fat(&curEntry, fs->fat, i, fs);
-
-	if (!get_owner(fs, i) && !FAT_IS_BAD(fs, curEntry.value))
-	    ++free;
-    }
-
-    if (!fs->fsinfo_start)
-	return free;
-
-    if (verbose)
-	printf("Checking free cluster summary.\n");
-    if (fs->free_clusters != 0xFFFFFFFF) {
-	if (free != fs->free_clusters) {
-	    printf("Free cluster summary wrong (%ld vs. really %ld)\n",
-		   (long)fs->free_clusters, (long)free);
-	    if (interactive)
-		printf("1) Correct\n2) Don't correct\n");
-	    else
-		printf("  Auto-correcting.\n");
-	    if (!interactive || get_key("12", "?") == '1')
-		do_set = 1;
-	}
-    } else {
-	printf("Free cluster summary uninitialized (should be %ld)\n", (long)free);
-	if (rw) {
-	    if (interactive)
-		printf("1) Set it\n2) Leave it uninitialized\n");
-	    else
-		printf("  Auto-setting.\n");
-	    if (!interactive || get_key("12", "?") == '1')
-		do_set = 1;
-	}
-    }
-
-    if (do_set) {
-	uint32_t le_free = htole32(free);
-	fs->free_clusters = free;
-	fs_write(fs->fsinfo_start + offsetof(struct info_sector, free_clusters),
-		 sizeof(le_free), &le_free);
-    }
-
-    return free;
 }

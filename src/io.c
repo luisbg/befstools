@@ -179,8 +179,3 @@ int fs_close(int write)
 	pdie("closing filesystem");
     return changed || did_change;
 }
-
-int fs_changed(void)
-{
-    return ! !changes || did_change;
-}

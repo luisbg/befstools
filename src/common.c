@@ -69,28 +69,6 @@ void *alloc(int size)
     return NULL;		/* for GCC */
 }
 
-void *qalloc(void **root, int size)
-{
-    LINK *link;
-
-    link = alloc(sizeof(LINK));
-    link->next = *root;
-    *root = link;
-    return link->data = alloc(size);
-}
-
-void qfree(void **root)
-{
-    LINK *this;
-
-    while (*root) {
-	this = (LINK *) * root;
-	*root = this->next;
-	free(this->data);
-	free(this);
-    }
-}
-
 int min(int a, int b)
 {
     return a < b ? a : b;

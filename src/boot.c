@@ -458,43 +458,9 @@ void read_boot(DOS_FS * fs)
     if (logical_sector_size & (SECTOR_SIZE - 1))
 	die("Logical sector size (%d bytes) is not a multiple of the physical "
 	    "sector size.", logical_sector_size);
-#if 0				/* linux kernel doesn't check that either */
-    /* ++roman: On Atari, these two fields are often left uninitialized */
-    if (!atari_format && (!b.secs_track || !b.heads))
-	die("Invalid disk format in boot sector.");
-#endif
+
     if (verbose)
 	dump_boot(fs, &b, logical_sector_size);
-}
-
-static void write_boot_label(DOS_FS * fs, char *label)
-{
-    if (fs->fat_bits == 12 || fs->fat_bits == 16) {
-	struct boot_sector_16 b16;
-
-	fs_read(0, sizeof(b16), &b16);
-	if (b16.extended_sig != 0x29) {
-	    b16.extended_sig = 0x29;
-	    b16.serial = 0;
-	    memmove(b16.fs_type, fs->fat_bits == 12 ? "FAT12   " : "FAT16   ",
-		    8);
-	}
-	memmove(b16.label, label, 11);
-	fs_write(0, sizeof(b16), &b16);
-    } else if (fs->fat_bits == 32) {
-	struct boot_sector b;
-
-	fs_read(0, sizeof(b), &b);
-	if (b.extended_sig != 0x29) {
-	    b.extended_sig = 0x29;
-	    b.serial = 0;
-	    memmove(b.fs_type, "FAT32   ", 8);
-	}
-	memmove(b.label, label, 11);
-	fs_write(0, sizeof(b), &b);
-	if (fs->backupboot_start)
-	    fs_write(fs->backupboot_start, sizeof(b), &b);
-    }
 }
 
 off_t find_volume_de(DOS_FS * fs, DIR_ENT * de)
@@ -527,12 +493,16 @@ off_t find_volume_de(DOS_FS * fs, DIR_ENT * de)
     return 0;
 }
 
-static void write_volume_label(DOS_FS * fs, char *label)
+void write_label(DOS_FS * fs, char *label)
 {
+    int l = strlen(label);
     time_t now = time(NULL);
     struct tm *mtime = localtime(&now);
     off_t offset;
     DIR_ENT de;
+
+    while (l < 11)
+	label[l++] = ' ';
 
     offset = find_volume_de(fs, &de);
     memcpy(de.name, label, 11);
@@ -543,15 +513,4 @@ static void write_volume_label(DOS_FS * fs, char *label)
 				       ((mtime->tm_mon + 1) << 5) +
 				       ((mtime->tm_year - 80) << 9)));
     fs_write(offset, sizeof(DIR_ENT), &de);
-}
-
-void write_label(DOS_FS * fs, char *label)
-{
-    int l = strlen(label);
-
-    while (l < 11)
-	label[l++] = ' ';
-
-    write_boot_label(fs, label);
-    write_volume_label(fs, label);
 }

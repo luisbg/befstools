@@ -56,8 +56,4 @@ int fs_close(int write);
    and removes the list of changes. Returns a non-zero integer if the file
    system has been changed since the last fs_open, zero otherwise. */
 
-int fs_changed(void);
-
-/* Determines whether the filesystem has changed. See fs_close. */
-
 #endif
