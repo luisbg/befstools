@@ -17,7 +17,7 @@
 AM_CFLAGS = -Wall -Wextra -Wno-sign-compare -Wno-missing-field-initializers \
 	    -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings
 
-sbin_PROGRAMS = mkfs.befs
+sbin_PROGRAMS = mkfs.befs befslabel
 noinst_PROGRAMS = testdevinfo
 
 mkfs_common_sources = device_info.c device_info.h \
@@ -28,6 +28,9 @@ mkfs_befs_SOURCES  = mkfs.befs.c befs.h $(mkfs_common_sources)
 mkfs_befs_CPPFLAGS = -I$(srcdir)/blkdev
 mkfs_befs_CFLAGS   = $(AM_CFLAGS) $(UDEV_CFLAGS)
 mkfs_befs_LDFLAGS  = $(UDEV_LIBS)
+
+befslabel_SOURCES = befslabel.c common.c common.h fsck.befs.h befs.h io.c \
+		    io.h boot.c boot.h fat.c fat.h
 
 testdevinfo_SOURCES  = testdevinfo.c $(mkfs_common_sources)
 testdevinfo_CPPFLAGS = -I$(srcdir)/blkdev
