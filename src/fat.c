@@ -47,30 +47,29 @@ void get_fat(FAT_ENTRY * entry, void *fat, uint32_t cluster, DOS_FS * fs)
     unsigned char *ptr;
 
     if (cluster > fs->data_clusters + 1) {
-	die("Internal error: cluster out of range in get_fat() (%lu > %lu).",
-		(unsigned long)cluster, (unsigned long)(fs->data_clusters + 1));
+        die("Internal error: cluster out of range in get_fat() (%lu > %lu).", (unsigned long) cluster, (unsigned long) (fs->data_clusters + 1));
     }
 
     switch (fs->fat_bits) {
     case 12:
-	ptr = &((unsigned char *)fat)[cluster * 3 / 2];
-	entry->value = 0xfff & (cluster & 1 ? (ptr[0] >> 4) | (ptr[1] << 4) :
-				(ptr[0] | ptr[1] << 8));
-	break;
+        ptr = &((unsigned char *) fat)[cluster * 3 / 2];
+        entry->value = 0xfff & (cluster & 1 ? (ptr[0] >> 4) | (ptr[1] << 4)
+                                : (ptr[0] | ptr[1] << 8));
+        break;
     case 16:
-	entry->value = le16toh(((unsigned short *)fat)[cluster]);
-	break;
+        entry->value = le16toh(((unsigned short *) fat)[cluster]);
+        break;
     case 32:
-	/* According to M$, the high 4 bits of a FAT32 entry are reserved and
-	 * are not part of the cluster number. So we cut them off. */
-	{
-	    uint32_t e = le32toh(((unsigned int *)fat)[cluster]);
-	    entry->value = e & 0xfffffff;
-	    entry->reserved = e >> 28;
-	}
-	break;
+        /* According to M$, the high 4 bits of a FAT32 entry are reserved and
+         * are not part of the cluster number. So we cut them off. */
+        {
+            uint32_t e = le32toh(((unsigned int *) fat)[cluster]);
+            entry->value = e & 0xfffffff;
+            entry->reserved = e >> 28;
+        }
+        break;
     default:
-	die("Bad FAT entry size: %d bits.", fs->fat_bits);
+        die("Bad FAT entry size: %d bits.", fs->fat_bits);
     }
 }
 
@@ -91,9 +90,9 @@ void read_fat(DOS_FS * fs)
 
     /* Clean up from previous pass */
     if (fs->fat)
-	free(fs->fat);
+        free(fs->fat);
     if (fs->cluster_owner)
-	free(fs->cluster_owner);
+        free(fs->cluster_owner);
     fs->fat = NULL;
     fs->cluster_owner = NULL;
 
@@ -101,61 +100,64 @@ void read_fat(DOS_FS * fs)
     eff_size = (total_num_clusters * fs->fat_bits + 7) / 8ULL;
 
     if (fs->fat_bits != 12)
-	    alloc_size = eff_size;
+        alloc_size = eff_size;
     else
-	    /* round up to an even number of FAT entries to avoid special
-	     * casing the last entry in get_fat() */
-	    alloc_size = (total_num_clusters * 12 + 23) / 24 * 3;
+        /* round up to an even number of FAT entries to avoid special
+         * casing the last entry in get_fat() */
+        alloc_size = (total_num_clusters * 12 + 23) / 24 * 3;
 
     first = alloc(alloc_size);
     fs_read(fs->fat_start, eff_size, first);
     if (fs->nfats > 1) {
-	second = alloc(alloc_size);
-	fs_read(fs->fat_start + fs->fat_size, eff_size, second);
+        second = alloc(alloc_size);
+        fs_read(fs->fat_start + fs->fat_size, eff_size, second);
     }
     if (second && memcmp(first, second, eff_size) != 0) {
-	FAT_ENTRY first_media, second_media;
-	get_fat(&first_media, first, 0, fs);
-	get_fat(&second_media, second, 0, fs);
-	first_ok = (first_media.value & FAT_EXTD(fs)) == FAT_EXTD(fs);
-	second_ok = (second_media.value & FAT_EXTD(fs)) == FAT_EXTD(fs);
-	if (first_ok && !second_ok) {
-	    printf("FATs differ - using first FAT.\n");
-	    fs_write(fs->fat_start + fs->fat_size, eff_size, first);
-	}
-	if (!first_ok && second_ok) {
-	    printf("FATs differ - using second FAT.\n");
-	    fs_write(fs->fat_start, eff_size, second);
-	    memcpy(first, second, eff_size);
-	}
-	if (first_ok && second_ok) {
-	    if (interactive) {
-		printf("FATs differ but appear to be intact. Use which FAT ?\n"
-		       "1) Use first FAT\n2) Use second FAT\n");
-		if (get_key("12", "?") == '1') {
-		    fs_write(fs->fat_start + fs->fat_size, eff_size, first);
-		} else {
-		    fs_write(fs->fat_start, eff_size, second);
-		    memcpy(first, second, eff_size);
-		}
-	    } else {
-		printf("FATs differ but appear to be intact. Using first "
-		       "FAT.\n");
-		fs_write(fs->fat_start + fs->fat_size, eff_size, first);
-	    }
-	}
-	if (!first_ok && !second_ok) {
-	    printf("Both FATs appear to be corrupt. Giving up.\n");
-	    exit(1);
-	}
+        FAT_ENTRY first_media, second_media;
+        get_fat(&first_media, first, 0, fs);
+        get_fat(&second_media, second, 0, fs);
+        first_ok = (first_media.value & FAT_EXTD(fs)) == FAT_EXTD(fs);
+        second_ok = (second_media.value & FAT_EXTD(fs)) == FAT_EXTD(fs);
+        if (first_ok && !second_ok) {
+            printf("FATs differ - using first FAT.\n");
+            fs_write(fs->fat_start + fs->fat_size, eff_size, first);
+        }
+        if (!first_ok && second_ok) {
+            printf("FATs differ - using second FAT.\n");
+            fs_write(fs->fat_start, eff_size, second);
+            memcpy(first, second, eff_size);
+        }
+        if (first_ok && second_ok) {
+            if (interactive) {
+                printf
+                    ("FATs differ but appear to be intact. Use which FAT ?\n"
+                     "1) Use first FAT\n2) Use second FAT\n");
+                if (get_key("12", "?") == '1') {
+                    fs_write(fs->fat_start + fs->fat_size, eff_size,
+                             first);
+                } else {
+                    fs_write(fs->fat_start, eff_size, second);
+                    memcpy(first, second, eff_size);
+                }
+            } else {
+                printf("FATs differ but appear to be intact. Using first "
+                       "FAT.\n");
+                fs_write(fs->fat_start + fs->fat_size, eff_size, first);
+            }
+        }
+        if (!first_ok && !second_ok) {
+            printf("Both FATs appear to be corrupt. Giving up.\n");
+            exit(1);
+        }
     }
     if (second) {
-	free(second);
+        free(second);
     }
-    fs->fat = (unsigned char *)first;
+    fs->fat = (unsigned char *) first;
 
     fs->cluster_owner = alloc(total_num_clusters * sizeof(DOS_FILE *));
-    memset(fs->cluster_owner, 0, (total_num_clusters * sizeof(DOS_FILE *)));
+    memset(fs->cluster_owner, 0,
+           (total_num_clusters * sizeof(DOS_FILE *)));
 }
 
 /**
@@ -177,19 +179,20 @@ uint32_t next_cluster(DOS_FS * fs, uint32_t cluster)
 
     value = curEntry.value;
     if (FAT_IS_BAD(fs, value))
-	die("Internal error: next_cluster on bad cluster");
+        die("Internal error: next_cluster on bad cluster");
     return FAT_IS_EOF(fs, value) ? -1 : value;
 }
 
 off_t cluster_start(DOS_FS * fs, uint32_t cluster)
 {
-    return fs->data_start + ((off_t)cluster - 2) * (uint64_t)fs->cluster_size;
+    return fs->data_start + ((off_t) cluster -
+                             2) * (uint64_t) fs->cluster_size;
 }
 
 DOS_FILE *get_owner(DOS_FS * fs, uint32_t cluster)
 {
     if (fs->cluster_owner == NULL)
-	return NULL;
+        return NULL;
     else
-	return fs->cluster_owner[cluster];
+        return fs->cluster_owner[cluster];
 }

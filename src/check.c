@@ -43,54 +43,55 @@ off_t alloc_rootdir_entry(DOS_FS * fs, DIR_ENT * de, const char *pattern)
     off_t offset = 0;
 
     if (fs->root_cluster) {
-	DIR_ENT d2;
-	int i = 0;
-	uint32_t clu_num;
-	off_t offset2;
+        DIR_ENT d2;
+        int i = 0;
+        uint32_t clu_num;
+        off_t offset2;
 
-	clu_num = fs->root_cluster;
-	offset = cluster_start(fs, clu_num);
-	while (clu_num > 0 && clu_num != -1) {
-	    fs_read(offset, sizeof(DIR_ENT), &d2);
-	    if (IS_FREE(d2.name) && d2.attr != VFAT_LN_ATTR) {
-		break;
-	    }
-	    i += sizeof(DIR_ENT);
-	    offset += sizeof(DIR_ENT);
-	    if ((i % fs->cluster_size) == 0) {
-		if ((clu_num = next_cluster(fs, clu_num)) == 0 || clu_num == -1)
-		    break;
-		offset = cluster_start(fs, clu_num);
-	    }
-	}
-	memset(de, 0, sizeof(DIR_ENT));
-	while (1) {
-	    char expanded[12];
-	    sprintf(expanded, pattern, curr_num);
-	    memcpy(de->name, expanded, MSDOS_NAME);
-	    clu_num = fs->root_cluster;
-	    i = 0;
-	    offset2 = cluster_start(fs, clu_num);
-	    while (clu_num > 0 && clu_num != -1) {
-		fs_read(offset2, sizeof(DIR_ENT), &d2);
-		if (offset2 != offset &&
-		    !strncmp((const char *)d2.name, (const char *)de->name,
-			     MSDOS_NAME))
-		    break;
-		i += sizeof(DIR_ENT);
-		offset2 += sizeof(DIR_ENT);
-		if ((i % fs->cluster_size) == 0) {
-		    if ((clu_num = next_cluster(fs, clu_num)) == 0 ||
-			clu_num == -1)
-			break;
-		    offset2 = cluster_start(fs, clu_num);
-		}
-	    }
-	    if (clu_num == 0 || clu_num == -1)
-		break;
-	    if (++curr_num >= 10000)
-		die("Unable to create unique name");
-	}
+        clu_num = fs->root_cluster;
+        offset = cluster_start(fs, clu_num);
+        while (clu_num > 0 && clu_num != -1) {
+            fs_read(offset, sizeof(DIR_ENT), &d2);
+            if (IS_FREE(d2.name) && d2.attr != VFAT_LN_ATTR) {
+                break;
+            }
+            i += sizeof(DIR_ENT);
+            offset += sizeof(DIR_ENT);
+            if ((i % fs->cluster_size) == 0) {
+                if ((clu_num = next_cluster(fs, clu_num)) == 0
+                    || clu_num == -1)
+                    break;
+                offset = cluster_start(fs, clu_num);
+            }
+        }
+        memset(de, 0, sizeof(DIR_ENT));
+        while (1) {
+            char expanded[12];
+            sprintf(expanded, pattern, curr_num);
+            memcpy(de->name, expanded, MSDOS_NAME);
+            clu_num = fs->root_cluster;
+            i = 0;
+            offset2 = cluster_start(fs, clu_num);
+            while (clu_num > 0 && clu_num != -1) {
+                fs_read(offset2, sizeof(DIR_ENT), &d2);
+                if (offset2 != offset &&
+                    !strncmp((const char *) d2.name,
+                             (const char *) de->name, MSDOS_NAME))
+                    break;
+                i += sizeof(DIR_ENT);
+                offset2 += sizeof(DIR_ENT);
+                if ((i % fs->cluster_size) == 0) {
+                    if ((clu_num = next_cluster(fs, clu_num)) == 0 ||
+                        clu_num == -1)
+                        break;
+                    offset2 = cluster_start(fs, clu_num);
+                }
+            }
+            if (clu_num == 0 || clu_num == -1)
+                break;
+            if (++curr_num >= 10000)
+                die("Unable to create unique name");
+        }
     }
     ++n_files;
 

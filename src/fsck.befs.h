@@ -43,95 +43,95 @@
 /* ++roman: Use own definition of boot sector structure -- the kernel headers'
  * name for it is msdos_boot_sector in 2.0 and fat_boot_sector in 2.1 ... */
 struct boot_sector {
-    uint8_t ignored[3];		/* Boot strap short or near jump */
-    uint8_t system_id[8];	/* Name - can be used to special case
-				   partition manager volumes */
-    uint8_t sector_size[2];	/* bytes per logical sector */
-    uint8_t cluster_size;	/* sectors/cluster */
-    uint16_t reserved;		/* reserved sectors */
-    uint8_t fats;		/* number of FATs */
-    uint8_t dir_entries[2];	/* root directory entries */
-    uint8_t sectors[2];		/* number of sectors */
-    uint8_t media;		/* media code (unused) */
-    uint16_t fat_length;	/* sectors/FAT */
-    uint16_t secs_track;	/* sectors per track */
-    uint16_t heads;		/* number of heads */
-    uint32_t hidden;		/* hidden sectors (unused) */
-    uint32_t total_sect;	/* number of sectors (if sectors == 0) */
+    uint8_t ignored[3];         /* Boot strap short or near jump */
+    uint8_t system_id[8];       /* Name - can be used to special case
+                                   partition manager volumes */
+    uint8_t sector_size[2];     /* bytes per logical sector */
+    uint8_t cluster_size;       /* sectors/cluster */
+    uint16_t reserved;          /* reserved sectors */
+    uint8_t fats;               /* number of FATs */
+    uint8_t dir_entries[2];     /* root directory entries */
+    uint8_t sectors[2];         /* number of sectors */
+    uint8_t media;              /* media code (unused) */
+    uint16_t fat_length;        /* sectors/FAT */
+    uint16_t secs_track;        /* sectors per track */
+    uint16_t heads;             /* number of heads */
+    uint32_t hidden;            /* hidden sectors (unused) */
+    uint32_t total_sect;        /* number of sectors (if sectors == 0) */
 
     /* The following fields are only used by FAT32 */
-    uint32_t fat32_length;	/* sectors/FAT */
-    uint16_t flags;		/* bit 8: fat mirroring, low 4: active fat */
-    uint8_t version[2];		/* major, minor filesystem version */
-    uint32_t root_cluster;	/* first cluster in root directory */
-    uint16_t info_sector;	/* filesystem info sector */
-    uint16_t backup_boot;	/* backup boot sector */
-    uint8_t reserved2[12];	/* Unused */
+    uint32_t fat32_length;      /* sectors/FAT */
+    uint16_t flags;             /* bit 8: fat mirroring, low 4: active fat */
+    uint8_t version[2];         /* major, minor filesystem version */
+    uint32_t root_cluster;      /* first cluster in root directory */
+    uint16_t info_sector;       /* filesystem info sector */
+    uint16_t backup_boot;       /* backup boot sector */
+    uint8_t reserved2[12];      /* Unused */
 
-    uint8_t drive_number;	/* Logical Drive Number */
-    uint8_t reserved3;		/* Unused */
+    uint8_t drive_number;       /* Logical Drive Number */
+    uint8_t reserved3;          /* Unused */
 
-    uint8_t extended_sig;	/* Extended Signature (0x29) */
-    uint32_t serial;		/* Serial number */
-    uint8_t label[11];		/* FS label */
-    uint8_t fs_type[8];		/* FS Type */
+    uint8_t extended_sig;       /* Extended Signature (0x29) */
+    uint32_t serial;            /* Serial number */
+    uint8_t label[11];          /* FS label */
+    uint8_t fs_type[8];         /* FS Type */
 
     /* fill up to 512 bytes */
     uint8_t junk[422];
 } __attribute__ ((packed));
 
 struct boot_sector_16 {
-    uint8_t ignored[3];		/* Boot strap short or near jump */
-    uint8_t system_id[8];	/* Name - can be used to special case
-				   partition manager volumes */
-    uint8_t sector_size[2];	/* bytes per logical sector */
-    uint8_t cluster_size;	/* sectors/cluster */
-    uint16_t reserved;		/* reserved sectors */
-    uint8_t fats;		/* number of FATs */
-    uint8_t dir_entries[2];	/* root directory entries */
-    uint8_t sectors[2];		/* number of sectors */
-    uint8_t media;		/* media code (unused) */
-    uint16_t fat_length;	/* sectors/FAT */
-    uint16_t secs_track;	/* sectors per track */
-    uint16_t heads;		/* number of heads */
-    uint32_t hidden;		/* hidden sectors (unused) */
-    uint32_t total_sect;	/* number of sectors (if sectors == 0) */
+    uint8_t ignored[3];         /* Boot strap short or near jump */
+    uint8_t system_id[8];       /* Name - can be used to special case
+                                   partition manager volumes */
+    uint8_t sector_size[2];     /* bytes per logical sector */
+    uint8_t cluster_size;       /* sectors/cluster */
+    uint16_t reserved;          /* reserved sectors */
+    uint8_t fats;               /* number of FATs */
+    uint8_t dir_entries[2];     /* root directory entries */
+    uint8_t sectors[2];         /* number of sectors */
+    uint8_t media;              /* media code (unused) */
+    uint16_t fat_length;        /* sectors/FAT */
+    uint16_t secs_track;        /* sectors per track */
+    uint16_t heads;             /* number of heads */
+    uint32_t hidden;            /* hidden sectors (unused) */
+    uint32_t total_sect;        /* number of sectors (if sectors == 0) */
 
-    uint8_t drive_number;	/* Logical Drive Number */
-    uint8_t reserved2;		/* Unused */
+    uint8_t drive_number;       /* Logical Drive Number */
+    uint8_t reserved2;          /* Unused */
 
-    uint8_t extended_sig;	/* Extended Signature (0x29) */
-    uint32_t serial;		/* Serial number */
-    uint8_t label[11];		/* FS label */
-    uint8_t fs_type[8];		/* FS Type */
+    uint8_t extended_sig;       /* Extended Signature (0x29) */
+    uint32_t serial;            /* Serial number */
+    uint8_t label[11];          /* FS label */
+    uint8_t fs_type[8];         /* FS Type */
 
     /* fill up to 512 bytes */
     uint8_t junk[450];
 } __attribute__ ((packed));
 
 struct info_sector {
-    uint32_t magic;		/* Magic for info sector ('RRaA') */
+    uint32_t magic;             /* Magic for info sector ('RRaA') */
     uint8_t junk[0x1dc];
-    uint32_t reserved1;		/* Nothing as far as I can tell */
-    uint32_t signature;		/* 0x61417272 ('rrAa') */
-    uint32_t free_clusters;	/* Free cluster count.  -1 if unknown */
-    uint32_t next_cluster;	/* Most recently allocated cluster. */
+    uint32_t reserved1;         /* Nothing as far as I can tell */
+    uint32_t signature;         /* 0x61417272 ('rrAa') */
+    uint32_t free_clusters;     /* Free cluster count.  -1 if unknown */
+    uint32_t next_cluster;      /* Most recently allocated cluster. */
     uint32_t reserved2[3];
     uint16_t reserved3;
     uint16_t boot_sign;
 };
 
 typedef struct {
-    uint8_t name[MSDOS_NAME];	/* name including extension */
-    uint8_t attr;		/* attribute bits */
-    uint8_t lcase;		/* Case for base and extension */
-    uint8_t ctime_ms;		/* Creation time, milliseconds */
-    uint16_t ctime;		/* Creation time */
-    uint16_t cdate;		/* Creation date */
-    uint16_t adate;		/* Last access date */
-    uint16_t starthi;		/* High 16 bits of cluster in FAT32 */
-    uint16_t time, date, start;	/* time, date and first cluster */
-    uint32_t size;		/* file size (in bytes) */
+    uint8_t name[MSDOS_NAME];   /* name including extension */
+    uint8_t attr;               /* attribute bits */
+    uint8_t lcase;              /* Case for base and extension */
+    uint8_t ctime_ms;           /* Creation time, milliseconds */
+    uint16_t ctime;             /* Creation time */
+    uint16_t cdate;             /* Creation date */
+    uint16_t adate;             /* Last access date */
+    uint16_t starthi;           /* High 16 bits of cluster in FAT32 */
+    uint16_t time, date, start; /* time, date and first cluster */
+    uint32_t size;              /* file size (in bytes) */
 } __attribute__ ((packed)) DIR_ENT;
 
 typedef struct _dos_file {
@@ -139,9 +139,9 @@ typedef struct _dos_file {
     char *lfn;
     off_t offset;
     off_t lfn_offset;
-    struct _dos_file *parent;	/* parent directory */
-    struct _dos_file *next;	/* next entry */
-    struct _dos_file *first;	/* first entry (directory only) */
+    struct _dos_file *parent;   /* parent directory */
+    struct _dos_file *next;     /* next entry */
+    struct _dos_file *first;    /* first entry (directory only) */
 } DOS_FILE;
 
 typedef struct {
@@ -152,18 +152,18 @@ typedef struct {
 typedef struct {
     int nfats;
     off_t fat_start;
-    off_t fat_size;		/* unit is bytes */
-    unsigned int fat_bits;	/* size of a FAT entry */
-    unsigned int eff_fat_bits;	/* # of used bits in a FAT entry */
-    uint32_t root_cluster;	/* 0 for old-style root dir */
+    off_t fat_size;             /* unit is bytes */
+    unsigned int fat_bits;      /* size of a FAT entry */
+    unsigned int eff_fat_bits;  /* # of used bits in a FAT entry */
+    uint32_t root_cluster;      /* 0 for old-style root dir */
     off_t root_start;
     unsigned int root_entries;
     off_t data_start;
     unsigned int cluster_size;
-    uint32_t data_clusters;	/* not including two reserved cluster numbers */
-    off_t fsinfo_start;		/* 0 if not present */
+    uint32_t data_clusters;     /* not including two reserved cluster numbers */
+    off_t fsinfo_start;         /* 0 if not present */
     long free_clusters;
-    off_t backupboot_start;	/* 0 if not present */
+    off_t backupboot_start;     /* 0 if not present */
     unsigned char *fat;
     DOS_FILE **cluster_owner;
     char *label;

@@ -49,14 +49,14 @@
 
 
 static const struct device_info device_info_clueless = {
-    .type         = TYPE_UNKNOWN,
-    .partition    = -1,
+    .type = TYPE_UNKNOWN,
+    .partition = -1,
     .has_children = -1,
-    .geom_heads   = -1,
+    .geom_heads = -1,
     .geom_sectors = -1,
-    .geom_start   = -1,
-    .sector_size  = -1,
-    .size         = -1,
+    .geom_start = -1,
+    .sector_size = -1,
+    .size = -1,
 };
 
 
@@ -68,7 +68,7 @@ static void get_block_device_size(struct device_info *info, int fd)
     unsigned long long bytes;
 
     if (!blkdev_get_size(fd, &bytes) && bytes != 0)
-	info->size = bytes;
+        info->size = bytes;
 }
 
 
@@ -77,13 +77,13 @@ static void get_block_geometry(struct device_info *info, int fd)
     unsigned int heads, sectors, start;
 
     if (!blkdev_get_geometry(fd, &heads, &sectors)
-	    && heads && sectors) {
-	info->geom_heads = heads;
-	info->geom_sectors = sectors;
+        && heads && sectors) {
+        info->geom_heads = heads;
+        info->geom_sectors = sectors;
     }
 
     if (!blkdev_get_start(fd, &start))
-	info->geom_start = start;
+        info->geom_start = start;
 }
 
 
@@ -92,7 +92,7 @@ static void get_sector_size(struct device_info *info, int fd)
     int size;
 
     if (!blkdev_get_sector_size(fd, &size))
-	info->sector_size = size;
+        info->sector_size = size;
 }
 
 
@@ -112,21 +112,21 @@ static int udev_fill_info(struct device_info *info, struct stat *stat)
     char *endptr;
 
     if (device_info_verbose >= 3)
-	printf("udev_fill_info()\n");
+        printf("udev_fill_info()\n");
 
     ctx = udev_new();
     if (!ctx) {
-	if (device_info_verbose)
-	    printf("no udev library context\n");
-	return -1;
+        if (device_info_verbose)
+            printf("no udev library context\n");
+        return -1;
     }
 
     dev = udev_device_new_from_devnum(ctx, 'b', stat->st_rdev);
     if (!dev) {
-	if (device_info_verbose)
-	    printf("no udev context\n");
-	udev_unref(ctx);
-	return -1;
+        if (device_info_verbose)
+            printf("no udev context\n");
+        udev_unref(ctx);
+        return -1;
     }
 
     /*
@@ -134,64 +134,65 @@ static int udev_fill_info(struct device_info *info, struct stat *stat)
      * this device)
      */
     if (device_info_verbose >= 3)
-	printf("looking for dependent devices\n");
+        printf("looking for dependent devices\n");
 
     uenum = udev_enumerate_new(ctx);
     if (uenum) {
-	struct udev_list_entry *entry;
-	if (udev_enumerate_add_match_parent(uenum, dev) >= 0 &&
-		udev_enumerate_scan_devices(uenum) >= 0) {
-	    entry = udev_enumerate_get_list_entry(uenum);
-	    if (entry) {
-		/*
-		 * the list of children includes the parent device, so make
-		 * sure that has_children is -1 to end up with the correct
-		 * count
-		 */
-		info->has_children = -1;
+        struct udev_list_entry *entry;
+        if (udev_enumerate_add_match_parent(uenum, dev) >= 0 &&
+            udev_enumerate_scan_devices(uenum) >= 0) {
+            entry = udev_enumerate_get_list_entry(uenum);
+            if (entry) {
+                /*
+                 * the list of children includes the parent device, so make
+                 * sure that has_children is -1 to end up with the correct
+                 * count
+                 */
+                info->has_children = -1;
 
-		while (entry) {
-		    if (device_info_verbose >= 2)
-			printf("child-or-self: %s\n", udev_list_entry_get_name(entry));
-		    entry = udev_list_entry_get_next(entry);
-		    info->has_children++;
-		}
-	    } else
-		info->has_children = 0;
-	}
-	udev_enumerate_unref(uenum);
+                while (entry) {
+                    if (device_info_verbose >= 2)
+                        printf("child-or-self: %s\n",
+                               udev_list_entry_get_name(entry));
+                    entry = udev_list_entry_get_next(entry);
+                    info->has_children++;
+                }
+            } else
+                info->has_children = 0;
+        }
+        udev_enumerate_unref(uenum);
     }
 
     /* see if the holders directory in sysfs exists and has entries */
     if (device_info_verbose >= 2)
-	printf("syspath: %s\n", udev_device_get_syspath(dev));
+        printf("syspath: %s\n", udev_device_get_syspath(dev));
     if (info->has_children < 1 || device_info_verbose >= 3) {
-	snprintf(holders_path, PATH_MAX, "%s/holders",
-		udev_device_get_syspath(dev));
-	holders_path[PATH_MAX] = 0;
+        snprintf(holders_path, PATH_MAX, "%s/holders",
+                 udev_device_get_syspath(dev));
+        holders_path[PATH_MAX] = 0;
 
-	if (info->has_children < 0)
-	    info->has_children = 0;
+        if (info->has_children < 0)
+            info->has_children = 0;
 
-	holders_dir = opendir(holders_path);
-	if (holders_dir) {
-	    dir_entry = readdir(holders_dir);
-	    while (dir_entry) {
-		if (dir_entry->d_reclen && dir_entry->d_name[0] != '.') {
-		    if (device_info_verbose >= 2)
-			printf("holder: %s\n", dir_entry->d_name);
+        holders_dir = opendir(holders_path);
+        if (holders_dir) {
+            dir_entry = readdir(holders_dir);
+            while (dir_entry) {
+                if (dir_entry->d_reclen && dir_entry->d_name[0] != '.') {
+                    if (device_info_verbose >= 2)
+                        printf("holder: %s\n", dir_entry->d_name);
 
-		    info->has_children++;
+                    info->has_children++;
 
-		    /* look up and print every holder when very verbose */
-		    if (device_info_verbose < 3)
-			break;
-		}
-		dir_entry = readdir(holders_dir);
-	    }
+                    /* look up and print every holder when very verbose */
+                    if (device_info_verbose < 3)
+                        break;
+                }
+                dir_entry = readdir(holders_dir);
+            }
 
-	    closedir(holders_dir);
-	}
+            closedir(holders_dir);
+        }
     }
 
     /*
@@ -201,62 +202,62 @@ static int udev_fill_info(struct device_info *info, struct stat *stat)
     parent = udev_device_get_parent(dev);
 
     if (!parent) {
-	if (device_info_verbose >= 3)
-	    printf("no parent found, therefore virtual device\n");
-	info->type = TYPE_VIRTUAL;
-	info->partition = 0;
-	udev_device_unref(dev);
-	return 0;
+        if (device_info_verbose >= 3)
+            printf("no parent found, therefore virtual device\n");
+        info->type = TYPE_VIRTUAL;
+        info->partition = 0;
+        udev_device_unref(dev);
+        return 0;
     }
 
     attr = udev_device_get_sysattr_value(dev, "removable");
     if (device_info_verbose >= 3) {
-	if (attr)
-	    printf("attribute \"removable\" is \"%s\"\n", attr);
-	else
-	    printf("attribute \"removable\" not found\n");
+        if (attr)
+            printf("attribute \"removable\" is \"%s\"\n", attr);
+        else
+            printf("attribute \"removable\" not found\n");
     }
     if (attr && !strcmp(attr, "1"))
-	info->type = TYPE_REMOVABLE;
+        info->type = TYPE_REMOVABLE;
     else
-	info->type = TYPE_FIXED;
+        info->type = TYPE_FIXED;
 
     attr = udev_device_get_sysattr_value(dev, "partition");
     if (attr) {
-	if (device_info_verbose >= 3)
-	    printf("attribute \"partition\" is \"%s\"\n", attr);
+        if (device_info_verbose >= 3)
+            printf("attribute \"partition\" is \"%s\"\n", attr);
 
-	number = strtoul(attr, &endptr, 10);
-	if (!*endptr)
-	    info->partition = number;
+        number = strtoul(attr, &endptr, 10);
+        if (!*endptr)
+            info->partition = number;
     } else {
-	printf("attribute \"partition\" not found\n");
-	if (info->type != TYPE_VIRTUAL && parent) {
-	    /* partitions have other block devices as parent */
-	    attr = udev_device_get_subsystem(parent);
-	    if (attr) {
-		if (device_info_verbose >= 3)
-		    printf("parent subsystem is \"%s\"\n", attr);
+        printf("attribute \"partition\" not found\n");
+        if (info->type != TYPE_VIRTUAL && parent) {
+            /* partitions have other block devices as parent */
+            attr = udev_device_get_subsystem(parent);
+            if (attr) {
+                if (device_info_verbose >= 3)
+                    printf("parent subsystem is \"%s\"\n", attr);
 
-		if (!strcmp(attr, "block"))
-		    /* we don't know the partition number, use 1 */
-		    info->partition = 1;
-		else
-		    info->partition = 0;
-	    }
-	}
+                if (!strcmp(attr, "block"))
+                    /* we don't know the partition number, use 1 */
+                    info->partition = 1;
+                else
+                    info->partition = 0;
+            }
+        }
     }
 
     udev_device_unref(dev);
     udev_unref(ctx);
     return 0;
 }
-#else  /* HAVE_UDEV */
+#else                           /* HAVE_UDEV */
 static int udev_fill_info(struct device_info *info, struct stat *stat)
 {
     /* prevent "unused parameter" warning */
-    (void)stat;
-    (void)info;
+    (void) stat;
+    (void) info;
 
     return -1;
 }
@@ -272,22 +273,22 @@ int get_device_info(int fd, struct device_info *info)
 
     ret = fstat(fd, &stat);
     if (ret < 0) {
-	perror("fstat on target failed");
-	return -1;
+        perror("fstat on target failed");
+        return -1;
     }
 
     if (S_ISREG(stat.st_mode)) {
-	/* there is nothing more to discover for an image file */
-	info->type = TYPE_FILE;
-	info->partition = 0;
-	info->size = stat.st_size;
-	return 0;
+        /* there is nothing more to discover for an image file */
+        info->type = TYPE_FILE;
+        info->partition = 0;
+        info->size = stat.st_size;
+        return 0;
     }
 
     if (!S_ISBLK(stat.st_mode)) {
-	/* neither regular file nor block device? not usable */
-	info->type = TYPE_BAD;
-	return 0;
+        /* neither regular file nor block device? not usable */
+        info->type = TYPE_BAD;
+        return 0;
     }
 
     get_block_device_size(info, fd);
@@ -308,10 +309,10 @@ int is_device_mounted(const char *path)
     struct mntent *mnt;
 
     if ((f = setmntent(_PATH_MOUNTED, "r")) == NULL)
-	return 0;
+        return 0;
     while ((mnt = getmntent(f)) != NULL)
-	if (strcmp(path, mnt->mnt_fsname) == 0)
-	    return 1;
+        if (strcmp(path, mnt->mnt_fsname) == 0)
+            return 1;
     endmntent(f);
     return 0;
 #endif
@@ -322,11 +323,11 @@ int is_device_mounted(const char *path)
 
     count = getmntinfo(&stat, 0);
     for (i = 0; i < count; i++)
-	if (!strcmp(path, stat[i].f_mntfromname))
-	    return 1;
+        if (!strcmp(path, stat[i].f_mntfromname))
+            return 1;
     return 0;
 #endif
 
-    (void)path; /* prevent unused parameter warning */
+    (void) path;                /* prevent unused parameter warning */
     return 0;
 }

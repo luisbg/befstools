@@ -64,9 +64,9 @@ void *alloc(int size)
     void *this;
 
     if ((this = malloc(size)))
-	return this;
+        return this;
     pdie("malloc");
-    return NULL;		/* for GCC */
+    return NULL;                /* for GCC */
 }
 
 int min(int a, int b)
@@ -79,19 +79,19 @@ char get_key(const char *valid, const char *prompt)
     int ch, okay;
 
     while (1) {
-	if (prompt)
-	    printf("%s ", prompt);
-	fflush(stdout);
-	while (ch = getchar(), ch == ' ' || ch == '\t') ;
-	if (ch == EOF)
-	    exit(1);
-	if (!strchr(valid, okay = ch))
-	    okay = 0;
-	while (ch = getchar(), ch != '\n' && ch != EOF) ;
-	if (ch == EOF)
-	    exit(1);
-	if (okay)
-	    return okay;
-	printf("Invalid input.\n");
+        if (prompt)
+            printf("%s ", prompt);
+        fflush(stdout);
+        while (ch = getchar(), ch == ' ' || ch == '\t');
+        if (ch == EOF)
+            exit(1);
+        if (!strchr(valid, okay = ch))
+            okay = 0;
+        while (ch = getchar(), ch != '\n' && ch != EOF);
+        if (ch == EOF)
+            exit(1);
+        if (okay)
+            return okay;
+        printf("Invalid input.\n");
     }
 }

@@ -27,7 +27,7 @@
 #ifndef _IO_H
 #define _IO_H
 
-#include <fcntl.h>		/* for off_t */
+#include <fcntl.h>              /* for off_t */
 
 void fs_open(char *path, int rw);
 

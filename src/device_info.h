@@ -2,12 +2,12 @@
 #define DEVICE_INFO_H
 
 enum device_type {
-    TYPE_UNKNOWN,   /* type could not be determined */
-    TYPE_BAD,       /* neither file nor block device */
-    TYPE_FILE,      /* image file rather than device */
-    TYPE_VIRTUAL,   /* block devices like LVM or RAID volumes */
-    TYPE_REMOVABLE, /* removable disk device */
-    TYPE_FIXED      /* fixed disk device */
+    TYPE_UNKNOWN,               /* type could not be determined */
+    TYPE_BAD,                   /* neither file nor block device */
+    TYPE_FILE,                  /* image file rather than device */
+    TYPE_VIRTUAL,               /* block devices like LVM or RAID volumes */
+    TYPE_REMOVABLE,             /* removable disk device */
+    TYPE_FIXED                  /* fixed disk device */
 };
 
 struct device_info {

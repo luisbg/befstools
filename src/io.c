@@ -59,8 +59,8 @@ static int fd, did_change = 0;
 void fs_open(char *path, int rw)
 {
     if ((fd = open(path, rw ? O_RDWR : O_RDONLY)) < 0) {
-	perror("open");
-	exit(6);
+        perror("open");
+        exit(6);
     }
     changes = last = NULL;
     did_change = 0;
@@ -81,20 +81,20 @@ void fs_read(off_t pos, int size, void *data)
     int got;
 
     if (lseek(fd, pos, 0) != pos)
-	pdie("Seek to %lld", pos);
+        pdie("Seek to %lld", pos);
     if ((got = read(fd, data, size)) < 0)
-	pdie("Read %d bytes at %lld", size, pos);
+        pdie("Read %d bytes at %lld", size, pos);
     if (got != size)
-	die("Got %d bytes instead of %d at %lld", got, size, pos);
+        die("Got %d bytes instead of %d at %lld", got, size, pos);
     for (walk = changes; walk; walk = walk->next) {
-	if (walk->pos < pos + size && walk->pos + walk->size > pos) {
-	    if (walk->pos < pos)
-		memcpy(data, (char *)walk->data + pos - walk->pos,
-		       min(size, walk->size - pos + walk->pos));
-	    else
-		memcpy((char *)data + walk->pos - pos, walk->data,
-		       min(walk->size, size + pos - walk->pos));
-	}
+        if (walk->pos < pos + size && walk->pos + walk->size > pos) {
+            if (walk->pos < pos)
+                memcpy(data, (char *) walk->data + pos - walk->pos,
+                       min(size, walk->size - pos + walk->pos));
+            else
+                memcpy((char *) data + walk->pos - pos, walk->data,
+                       min(walk->size, size + pos - walk->pos));
+        }
     }
 }
 
@@ -104,7 +104,7 @@ int fs_test(off_t pos, int size)
     int okay;
 
     if (lseek(fd, pos, 0) != pos)
-	pdie("Seek to %lld", pos);
+        pdie("Seek to %lld", pos);
     scratch = alloc(size);
     okay = read(fd, scratch, size) == size;
     free(scratch);
@@ -117,23 +117,23 @@ void fs_write(off_t pos, int size, void *data)
     int did;
 
     if (write_immed) {
-	did_change = 1;
-	if (lseek(fd, pos, 0) != pos)
-	    pdie("Seek to %lld", pos);
-	if ((did = write(fd, data, size)) == size)
-	    return;
-	if (did < 0)
-	    pdie("Write %d bytes at %lld", size, pos);
-	die("Wrote %d bytes instead of %d at %lld", did, size, pos);
+        did_change = 1;
+        if (lseek(fd, pos, 0) != pos)
+            pdie("Seek to %lld", pos);
+        if ((did = write(fd, data, size)) == size)
+            return;
+        if (did < 0)
+            pdie("Write %d bytes at %lld", size, pos);
+        die("Wrote %d bytes instead of %d at %lld", did, size, pos);
     }
     new = alloc(sizeof(CHANGE));
     new->pos = pos;
     memcpy(new->data = alloc(new->size = size), data, size);
     new->next = NULL;
     if (last)
-	last->next = new;
+        last->next = new;
     else
-	changes = new;
+        changes = new;
     last = new;
 }
 
@@ -143,20 +143,20 @@ static void fs_flush(void)
     int size;
 
     while (changes) {
-	this = changes;
-	changes = changes->next;
-	if (lseek(fd, this->pos, 0) != this->pos)
-	    fprintf(stderr,
-		    "Seek to %lld failed: %s\n  Did not write %d bytes.\n",
-		    (long long)this->pos, strerror(errno), this->size);
-	else if ((size = write(fd, this->data, this->size)) < 0)
-	    fprintf(stderr, "Writing %d bytes at %lld failed: %s\n", this->size,
-		    (long long)this->pos, strerror(errno));
-	else if (size != this->size)
-	    fprintf(stderr, "Wrote %d bytes instead of %d bytes at %lld."
-		    "\n", size, this->size, (long long)this->pos);
-	free(this->data);
-	free(this);
+        this = changes;
+        changes = changes->next;
+        if (lseek(fd, this->pos, 0) != this->pos)
+            fprintf(stderr,
+                    "Seek to %lld failed: %s\n  Did not write %d bytes.\n",
+                    (long long) this->pos, strerror(errno), this->size);
+        else if ((size = write(fd, this->data, this->size)) < 0)
+            fprintf(stderr, "Writing %d bytes at %lld failed: %s\n",
+                    this->size, (long long) this->pos, strerror(errno));
+        else if (size != this->size)
+            fprintf(stderr, "Wrote %d bytes instead of %d bytes at %lld."
+                    "\n", size, this->size, (long long) this->pos);
+        free(this->data);
+        free(this);
     }
 }
 
@@ -167,15 +167,15 @@ int fs_close(int write)
 
     changed = ! !changes;
     if (write)
-	fs_flush();
+        fs_flush();
     else
-	while (changes) {
-	    next = changes->next;
-	    free(changes->data);
-	    free(changes);
-	    changes = next;
-	}
+        while (changes) {
+            next = changes->next;
+            free(changes->data);
+            free(changes);
+            changes = next;
+        }
     if (close(fd) < 0)
-	pdie("closing filesystem");
+        pdie("closing filesystem");
     return changed || did_change;
 }
