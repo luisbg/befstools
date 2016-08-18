@@ -205,7 +205,7 @@ char dummy_boot_code[BOOTCODE_SIZE] = "\x0e"	/* push cs */
 
 /* Global variables - the root of all evil :-) - see these and weep! */
 
-static const char *program_name = "mkfs.fat";	/* Name of the program */
+static const char *program_name = "mkfs.befs";	/* Name of the program */
 static char *device_name = NULL;	/* Name of the device on which to create the filesystem */
 static int atari_format = 0;	/* Use Atari variation of MS-DOS FS format */
 static int check = FALSE;	/* Default to no readablity checking */
@@ -1249,14 +1249,7 @@ static void write_tables(void)
 static void usage(int exitval)
 {
     fprintf(stderr, "\
-Usage: mkfs.fat [-a][-A][-c][-C][-v][-I][-l bad-block-file][-b backup-boot-sector]\n\
-       [-m boot-msg-file][-n volume-name][-i volume-id]\n\
-       [-s sectors-per-cluster][-S logical-sector-size][-f number-of-FATs]\n\
-       [-h hidden-sectors][-F fat-size][-r root-dir-entries][-R reserved-sectors]\n\
-       [-M FAT-media-byte][-D drive_number]\n\
-       [--invariant]\n\
-       [--help]\n\
-       /dev/name [blocks]\n");
+Usage: mkfs.befs [-n volume-name] [--help] /dev/name [blocks]\n");
     exit(exitval);
 }
 
@@ -1288,17 +1281,15 @@ static void check_atari(void)
 #endif
 }
 
-/* The "main" entry point into the utility - we pick up the options and attempt to process them in some sort of sensible
-   way.  In the event that some/all of the options are invalid we need to tell the user so that something can be done! */
+/* The "main" entry point into the utility */
 
 int main(int argc, char **argv)
 {
     int c;
     char *tmp;
     char *listfile = NULL;
-    FILE *msgfile;
     struct device_info devinfo;
-    int i = 0, pos, ch;
+    int i = 0;
     int create = 0;
     uint64_t cblocks = 0;
     int blocks_specified = 0;
@@ -1323,161 +1314,12 @@ int main(int argc, char **argv)
     volume_id = (uint32_t) ((create_timeval.tv_sec << 20) | create_timeval.tv_usec);	/* Default volume ID = creation time, fudged for more uniqueness */
     check_atari();
 
-    printf("mkfs.fat " VERSION " (" VERSION_DATE ")\n");
+    printf("mkfs.befs " VERSION " (" VERSION_DATE ")\n");
 
-    while ((c = getopt_long(argc, argv, "aAb:cCf:D:F:Ii:l:m:M:n:r:R:s:S:h:v",
+    while ((c = getopt_long(argc, argv, "n:v",
 				    long_options, NULL)) != -1)
 	/* Scan the command line for options */
 	switch (c) {
-	case 'A':		/* toggle Atari format */
-	    atari_format = !atari_format;
-	    break;
-
-	case 'a':		/* a : skip alignment */
-	    align_structures = FALSE;
-	    break;
-
-	case 'b':		/* b : location of backup boot sector */
-	    backup_boot = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp || backup_boot < 2 || backup_boot > 0xffff) {
-		printf("Bad location for backup boot sector : %s\n", optarg);
-		usage(1);
-	    }
-	    break;
-
-	case 'c':		/* c : Check FS as we build it */
-	    check = TRUE;
-	    malloc_entire_fat = TRUE;	/* Need to be able to mark clusters bad */
-	    break;
-
-	case 'C':		/* C : Create a new file */
-	    create = TRUE;
-	    break;
-
-	case 'D':		/* D : Choose Drive Number */
-	    drive_number_option = (int) strtol (optarg, &tmp, 0);
-	    if (*tmp || (drive_number_option != 0 && drive_number_option != 0x80)) {
-		printf ("Drive number must be 0 or 0x80: %s\n", optarg);
-		usage(1);
-	    }
-	    drive_number_by_user=1;
-	    break;
-
-	case 'f':		/* f : Choose number of FATs */
-	    nr_fats = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp || nr_fats < 1 || nr_fats > 4) {
-		printf("Bad number of FATs : %s\n", optarg);
-		usage(1);
-	    }
-	    break;
-
-	case 'F':		/* F : Choose FAT size */
-	    size_fat = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp || (size_fat != 12 && size_fat != 16 && size_fat != 32)) {
-		printf("Bad FAT type : %s\n", optarg);
-		usage(1);
-	    }
-	    size_fat_by_user = 1;
-	    break;
-
-	case 'h':		/* h : number of hidden sectors */
-	    hidden_sectors = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp || hidden_sectors < 0) {
-		printf("Bad number of hidden sectors : %s\n", optarg);
-		usage(1);
-	    }
-	    hidden_sectors_by_user = 1;
-	    break;
-
-	case 'I':
-	    ignore_full_disk = 1;
-	    break;
-
-	case 'i':		/* i : specify volume ID */
-	    volume_id = strtoul(optarg, &tmp, 16);
-	    if (*tmp) {
-		printf("Volume ID must be a hexadecimal number\n");
-		usage(1);
-	    }
-	    break;
-
-	case 'l':		/* l : Bad block filename */
-	    listfile = optarg;
-	    malloc_entire_fat = TRUE;	/* Need to be able to mark clusters bad */
-	    break;
-
-	case 'm':		/* m : Set boot message */
-	    if (strcmp(optarg, "-")) {
-		msgfile = fopen(optarg, "r");
-		if (!msgfile)
-		    perror(optarg);
-	    } else
-		msgfile = stdin;
-
-	    if (msgfile) {
-		/* The boot code ends at offset 448 and needs a null terminator */
-		i = MESSAGE_OFFSET;
-		pos = 0;	/* We are at beginning of line */
-		do {
-		    ch = getc(msgfile);
-		    switch (ch) {
-		    case '\r':	/* Ignore CRs */
-		    case '\0':	/* and nulls */
-			break;
-
-		    case '\n':	/* LF -> CR+LF if necessary */
-			if (pos) {	/* If not at beginning of line */
-			    dummy_boot_code[i++] = '\r';
-			    pos = 0;
-			}
-			dummy_boot_code[i++] = '\n';
-			break;
-
-		    case '\t':	/* Expand tabs */
-			do {
-			    dummy_boot_code[i++] = ' ';
-			    pos++;
-			}
-			while (pos % 8 && i < BOOTCODE_SIZE - 1);
-			break;
-
-		    case EOF:
-			dummy_boot_code[i++] = '\0';	/* Null terminator */
-			break;
-
-		    default:
-			dummy_boot_code[i++] = ch;	/* Store character */
-			pos++;	/* Advance position */
-			break;
-		    }
-		}
-		while (ch != EOF && i < BOOTCODE_SIZE - 1);
-
-		/* Fill up with zeros */
-		while (i < BOOTCODE_SIZE - 1)
-		    dummy_boot_code[i++] = '\0';
-		dummy_boot_code[BOOTCODE_SIZE - 1] = '\0';	/* Just in case */
-
-		if (ch != EOF)
-		    printf("Warning: message too long; truncated\n");
-
-		if (msgfile != stdin)
-		    fclose(msgfile);
-	    }
-	    break;
-
-	case 'M':		/* M : FAT Media byte */
-	    fat_media_byte = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp) {
-		printf("Bad number for media descriptor : %s\n", optarg);
-		usage(1);
-	    }
-	    if (fat_media_byte != 0xf0 && (fat_media_byte < 0xf8 || fat_media_byte > 0xff)) {
-		printf("FAT Media byte must either be between 0xF8 and 0xFF or be 0xF0 : %s\n", optarg);
-		usage(1);
-	    }
-	    break;
-
 	case 'n':		/* n : Volume name */
 	    sprintf(volume_name, "%-11.11s", optarg);
 	    for (i = 0; volume_name[i] && i < 11; i++)
@@ -1488,47 +1330,6 @@ int main(int argc, char **argv)
 		    break;
 		}
 
-	    break;
-
-	case 'r':		/* r : Root directory entries */
-	    root_dir_entries = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp || root_dir_entries < 16 || root_dir_entries > 32768) {
-		printf("Bad number of root directory entries : %s\n", optarg);
-		usage(1);
-	    }
-	    break;
-
-	case 'R':		/* R : number of reserved sectors */
-	    reserved_sectors = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp || reserved_sectors < 1 || reserved_sectors > 0xffff) {
-		printf("Bad number of reserved sectors : %s\n", optarg);
-		usage(1);
-	    }
-	    break;
-
-	case 's':		/* s : Sectors per cluster */
-	    sectors_per_cluster = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp || (sectors_per_cluster != 1 && sectors_per_cluster != 2
-			 && sectors_per_cluster != 4 && sectors_per_cluster != 8
-			 && sectors_per_cluster != 16
-			 && sectors_per_cluster != 32
-			 && sectors_per_cluster != 64
-			 && sectors_per_cluster != 128)) {
-		printf("Bad number of sectors per cluster : %s\n", optarg);
-		usage(1);
-	    }
-	    break;
-
-	case 'S':		/* S : Sector size */
-	    sector_size = (int)strtol(optarg, &tmp, 0);
-	    if (*tmp || (sector_size != 512 && sector_size != 1024 &&
-			 sector_size != 2048 && sector_size != 4096 &&
-			 sector_size != 8192 && sector_size != 16384 &&
-			 sector_size != 32768)) {
-		printf("Bad logical sector size : %s\n", optarg);
-		usage(1);
-	    }
-	    sector_size_set = 1;
 	    break;
 
 	case 'v':		/* v : Verbose execution */
