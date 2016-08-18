@@ -30,7 +30,7 @@ mkfs_befs_CFLAGS   = $(AM_CFLAGS) $(UDEV_CFLAGS)
 mkfs_befs_LDFLAGS  = $(UDEV_LIBS)
 
 befslabel_SOURCES = befslabel.c common.c common.h fsck.befs.h befs.h io.c \
-		    io.h boot.c boot.h fat.c fat.h
+		    io.h boot.c boot.h fat.c fat.h check.h check.c
 
 testdevinfo_SOURCES  = testdevinfo.c $(mkfs_common_sources)
 testdevinfo_CPPFLAGS = -I$(srcdir)/blkdev

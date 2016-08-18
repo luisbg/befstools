@@ -37,6 +37,7 @@
 #include "fat.h"
 #include "io.h"
 #include "boot.h"
+#include "check.h"
 
 #define ROUND_TO_MULTIPLE(n,m) ((n) && (m) ? (n)+(m)-1-((n)-1)%(m) : 0)
     /* don't divide by zero */
@@ -463,6 +464,36 @@ void read_boot(DOS_FS * fs)
 	dump_boot(fs, &b, logical_sector_size);
 }
 
+static void write_boot_label(DOS_FS * fs, char *label)
+{
+    if (fs->fat_bits == 12 || fs->fat_bits == 16) {
+	struct boot_sector_16 b16;
+
+	fs_read(0, sizeof(b16), &b16);
+	if (b16.extended_sig != 0x29) {
+	    b16.extended_sig = 0x29;
+	    b16.serial = 0;
+	    memmove(b16.fs_type, fs->fat_bits == 12 ? "FAT12   " : "FAT16   ",
+		    8);
+	}
+	memmove(b16.label, label, 11);
+	fs_write(0, sizeof(b16), &b16);
+    } else if (fs->fat_bits == 32) {
+	struct boot_sector b;
+
+	fs_read(0, sizeof(b), &b);
+	if (b.extended_sig != 0x29) {
+	    b.extended_sig = 0x29;
+	    b.serial = 0;
+	    memmove(b.fs_type, "FAT32   ", 8);
+	}
+	memmove(b.label, label, 11);
+	fs_write(0, sizeof(b), &b);
+	if (fs->backupboot_start)
+	    fs_write(fs->backupboot_start, sizeof(b), &b);
+    }
+}
+
 off_t find_volume_de(DOS_FS * fs, DIR_ENT * de)
 {
     uint32_t cluster;
@@ -493,18 +524,20 @@ off_t find_volume_de(DOS_FS * fs, DIR_ENT * de)
     return 0;
 }
 
-void write_label(DOS_FS * fs, char *label)
+static void write_volume_label(DOS_FS * fs, char *label)
 {
-    int l = strlen(label);
     time_t now = time(NULL);
     struct tm *mtime = localtime(&now);
     off_t offset;
+    int created;
     DIR_ENT de;
 
-    while (l < 11)
-	label[l++] = ' ';
-
+    created = 0;
     offset = find_volume_de(fs, &de);
+    if (offset == 0) {
+	created = 1;
+	offset = alloc_rootdir_entry(fs, &de, label);
+    }
     memcpy(de.name, label, 11);
     de.time = htole16((unsigned short)((mtime->tm_sec >> 1) +
 				       (mtime->tm_min << 5) +
@@ -512,5 +545,27 @@ void write_label(DOS_FS * fs, char *label)
     de.date = htole16((unsigned short)(mtime->tm_mday +
 				       ((mtime->tm_mon + 1) << 5) +
 				       ((mtime->tm_year - 80) << 9)));
+    if (created) {
+	de.attr = ATTR_VOLUME;
+	de.ctime_ms = 0;
+	de.ctime = de.time;
+	de.cdate = de.date;
+	de.adate = de.date;
+	de.starthi = 0;
+	de.start = 0;
+	de.size = 0;
+    }
+
     fs_write(offset, sizeof(DIR_ENT), &de);
+}
+
+void write_label(DOS_FS * fs, char *label)
+{
+    int l = strlen(label);
+
+    while (l < 11)
+	label[l++] = ' ';
+
+    write_boot_label(fs, label);
+    write_volume_label(fs, label);
 }
