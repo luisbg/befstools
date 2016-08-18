@@ -82,18 +82,10 @@ static void dump_boot(DOS_FS * fs, struct boot_sector *b, unsigned lss)
     unsigned short sectors;
 
     printf("Boot sector contents:\n");
-    if (!atari_format) {
-	char id[9];
-	strncpy(id, (const char *)b->system_id, 8);
-	id[8] = 0;
-	printf("System ID \"%s\"\n", id);
-    } else {
-	/* On Atari, a 24 bit serial number is stored at offset 8 of the boot
-	 * sector */
-	printf("Serial number 0x%x\n",
-	       b->system_id[5] | (b->system_id[6] << 8) | (b->
-							   system_id[7] << 16));
-    }
+    char id[9];
+    strncpy(id, (const char *)b->system_id, 8);
+    id[8] = 0;
+    printf("System ID \"%s\"\n", id);
     printf("Media byte 0x%02x (%s)\n", b->media, get_media_descr(b->media));
     printf("%10d bytes per logical sector\n", GET_UNALIGNED_W(b->sector_size));
     printf("%10d bytes per cluster\n", fs->cluster_size);
@@ -122,10 +114,7 @@ static void dump_boot(DOS_FS * fs, struct boot_sector *b, unsigned lss)
 	   (unsigned long long)fs->data_clusters * fs->cluster_size);
     printf("%u sectors/track, %u heads\n", le16toh(b->secs_track),
 	   le16toh(b->heads));
-    printf("%10u hidden sectors\n", atari_format ?
-	   /* On Atari, the hidden field is only 16 bit wide and unused */
-	   (((unsigned char *)&b->hidden)[0] |
-	    ((unsigned char *)&b->hidden)[1] << 8) : le32toh(b->hidden));
+    printf("%10u hidden sectors\n", le32toh(b->hidden));
     sectors = GET_UNALIGNED_W(b->sectors);
     printf("%10u sectors total\n", sectors ? sectors : le32toh(b->total_sect));
 }
@@ -410,25 +399,15 @@ void read_boot(DOS_FS * fs)
 	check_backup_boot(fs, &b, logical_sector_size);
 
 	read_fsinfo(fs, &b, logical_sector_size);
-    } else if (!atari_format) {
+    } else {
 	/* On real MS-DOS, a 16 bit FAT is used whenever there would be too
 	 * much clusers otherwise. */
 	fs->fat_bits = (fs->data_clusters >= FAT12_THRESHOLD) ? 16 : 12;
 	if (fs->data_clusters >= FAT16_THRESHOLD)
 	    die("Too many clusters (%lu) for FAT16 filesystem.", fs->data_clusters);
 	check_fat_state_bit(fs, &b);
-    } else {
-	/* On Atari, things are more difficult: GEMDOS always uses 12bit FATs
-	 * on floppies, and always 16 bit on harddisks. */
-	fs->fat_bits = 16;	/* assume 16 bit FAT for now */
-	/* If more clusters than fat entries in 16-bit fat, we assume
-	 * it's a real MSDOS FS with 12-bit fat. */
-	if (fs->data_clusters + 2 > fat_length * logical_sector_size * 8 / 16 ||
-	    /* if it has one of the usual floppy sizes -> 12bit FAT  */
-	    (total_sectors == 720 || total_sectors == 1440 ||
-	     total_sectors == 2880))
-	    fs->fat_bits = 12;
     }
+
     /* On FAT32, the high 4 bits of a FAT entry are reserved */
     fs->eff_fat_bits = (fs->fat_bits == 32) ? 28 : fs->fat_bits;
     fs->fat_size = fat_length * logical_sector_size;

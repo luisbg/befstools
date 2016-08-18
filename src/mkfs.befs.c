@@ -86,7 +86,7 @@ static inline int cdiv(int a, int b)
 }
 
 /* FAT values */
-#define FAT_EOF      (atari_format ? 0x0fffffff : 0x0ffffff8)
+#define FAT_EOF      (0x0ffffff8)
 #define FAT_BAD      0x0ffffff7
 
 #define MSDOS_EXT_SIGN 0x29	/* extended boot sector signature */
@@ -207,7 +207,6 @@ char dummy_boot_code[BOOTCODE_SIZE] = "\x0e"	/* push cs */
 
 static const char *program_name = "mkfs.befs";	/* Name of the program */
 static char *device_name = NULL;	/* Name of the device on which to create the filesystem */
-static int atari_format = 0;	/* Use Atari variation of MS-DOS FS format */
 static int check = FALSE;	/* Default to no readablity checking */
 static int verbose = 0;		/* Default to verbose mode off */
 static long volume_id;		/* Volume ID number */
@@ -531,7 +530,7 @@ static void establish_params(struct device_info *info)
 		sec_per_track = 15;
 		heads = 2;
 		media = 0xf9;
-		cluster_size = (atari_format ? 2 : 1);
+		cluster_size = (1);
 		def_root_dir_entries = 224;
 		break;
 
@@ -539,7 +538,7 @@ static void establish_params(struct device_info *info)
 		sec_per_track = 18;
 		heads = 2;
 		media = 0xf0;
-		cluster_size = (atari_format ? 2 : 1);
+		cluster_size = (1);
 		def_root_dir_entries = 224;
 		break;
 
@@ -609,19 +608,20 @@ static unsigned int align_object(unsigned int sectors, unsigned int clustsize)
 
 static void setup_tables(void)
 {
+    unsigned fatdata1216;	/* Sectors for FATs + data area (FAT12/16) */
+    unsigned fatdata32;	/* Sectors for FATs + data area (FAT32) */
+    unsigned fatlength12, fatlength16, fatlength32;
+    unsigned maxclust12, maxclust16, maxclust32;
+    unsigned clust12, clust16, clust32;
+    int maxclustsize;
+    unsigned root_dir_sectors = cdiv(root_dir_entries * 32, sector_size);
+
     unsigned cluster_count = 0, fat_length;
     struct tm *ctime;
     struct msdos_volume_info *vi =
 	(size_fat == 32 ? &bs.fat32.vi : &bs.oldfat.vi);
 
-    if (atari_format) {
-	/* On Atari, the first few bytes of the boot sector are assigned
-	 * differently: The jump code is only 2 bytes (and m68k machine code
-	 * :-), then 6 bytes filler (ignored), then 3 byte serial number. */
-	bs.boot_jump[2] = 'm';
-	memcpy((char *)bs.system_id, "kdosf", strlen("kdosf"));
-    } else
-	memcpy((char *)bs.system_id, "mkfs.fat", strlen("mkfs.fat"));
+    memcpy((char *)bs.system_id, "mkfs.fat", strlen("mkfs.fat"));
     if (sectors_per_cluster)
 	bs.cluster_size = (char)sectors_per_cluster;
 
@@ -642,42 +642,33 @@ static void setup_tables(void)
 	root_dir_entries = 0;
     }
 
-    if (atari_format) {
-	bs.system_id[5] = (unsigned char)(volume_id & 0x000000ff);
-	bs.system_id[6] = (unsigned char)((volume_id & 0x0000ff00) >> 8);
-	bs.system_id[7] = (unsigned char)((volume_id & 0x00ff0000) >> 16);
+    vi->volume_id[0] = (unsigned char)(volume_id & 0x000000ff);
+    vi->volume_id[1] = (unsigned char)((volume_id & 0x0000ff00) >> 8);
+    vi->volume_id[2] = (unsigned char)((volume_id & 0x00ff0000) >> 16);
+    vi->volume_id[3] = (unsigned char)(volume_id >> 24);
+
+    memcpy(vi->volume_label, volume_name, 11);
+    memcpy(bs.boot_jump, dummy_boot_jump, 3);
+
+    /* Patch in the correct offset to the boot code */
+    bs.boot_jump[1] = ((size_fat == 32 ?
+		       (char *)&bs.fat32.boot_code :
+		       (char *)&bs.oldfat.boot_code) - (char *)&bs) - 2;
+
+    if (size_fat == 32) {
+        int offset = (char *)&bs.fat32.boot_code -
+	    (char *)&bs + MESSAGE_OFFSET + 0x7c00;
+        if (dummy_boot_code[BOOTCODE_FAT32_SIZE - 1])
+	    printf("Warning: message too long; truncated\n");
+        dummy_boot_code[BOOTCODE_FAT32_SIZE - 1] = 0;
+        memcpy(bs.fat32.boot_code, dummy_boot_code, BOOTCODE_FAT32_SIZE);
+        bs.fat32.boot_code[MSG_OFFSET_OFFSET] = offset & 0xff;
+        bs.fat32.boot_code[MSG_OFFSET_OFFSET + 1] = offset >> 8;
     } else {
-	vi->volume_id[0] = (unsigned char)(volume_id & 0x000000ff);
-	vi->volume_id[1] = (unsigned char)((volume_id & 0x0000ff00) >> 8);
-	vi->volume_id[2] = (unsigned char)((volume_id & 0x00ff0000) >> 16);
-	vi->volume_id[3] = (unsigned char)(volume_id >> 24);
+        memcpy(bs.oldfat.boot_code, dummy_boot_code, BOOTCODE_SIZE);
     }
+    bs.boot_sign = htole16(BOOT_SIGN);
 
-    if (!atari_format) {
-	memcpy(vi->volume_label, volume_name, 11);
-
-	memcpy(bs.boot_jump, dummy_boot_jump, 3);
-	/* Patch in the correct offset to the boot code */
-	bs.boot_jump[1] = ((size_fat == 32 ?
-			    (char *)&bs.fat32.boot_code :
-			    (char *)&bs.oldfat.boot_code) - (char *)&bs) - 2;
-
-	if (size_fat == 32) {
-	    int offset = (char *)&bs.fat32.boot_code -
-		(char *)&bs + MESSAGE_OFFSET + 0x7c00;
-	    if (dummy_boot_code[BOOTCODE_FAT32_SIZE - 1])
-		printf("Warning: message too long; truncated\n");
-	    dummy_boot_code[BOOTCODE_FAT32_SIZE - 1] = 0;
-	    memcpy(bs.fat32.boot_code, dummy_boot_code, BOOTCODE_FAT32_SIZE);
-	    bs.fat32.boot_code[MSG_OFFSET_OFFSET] = offset & 0xff;
-	    bs.fat32.boot_code[MSG_OFFSET_OFFSET + 1] = offset >> 8;
-	} else {
-	    memcpy(bs.oldfat.boot_code, dummy_boot_code, BOOTCODE_SIZE);
-	}
-	bs.boot_sign = htole16(BOOT_SIGN);
-    } else {
-	memcpy(bs.boot_jump, dummy_boot_jump_m68k, 2);
-    }
     if (verbose >= 2)
 	printf("Boot jump code is %02x %02x\n",
 	       bs.boot_jump[0], bs.boot_jump[1]);
@@ -692,7 +683,7 @@ static void setup_tables(void)
     if (verbose >= 2)
 	printf("Using %d reserved sectors\n", reserved_sectors);
     bs.fats = (char)nr_fats;
-    if (!atari_format || size_fat == 32)
+    if (size_fat == 32)
 	bs.hidden = htole32(hidden_sectors);
     else {
 	/* In Atari format, hidden is a 16 bit field */
@@ -712,273 +703,182 @@ static void setup_tables(void)
 	    (long long)(blocks * BLOCK_SIZE / sector_size) + orphaned_sectors;
     }
 
-    if (!atari_format) {
-	unsigned fatdata1216;	/* Sectors for FATs + data area (FAT12/16) */
-	unsigned fatdata32;	/* Sectors for FATs + data area (FAT32) */
-	unsigned fatlength12, fatlength16, fatlength32;
-	unsigned maxclust12, maxclust16, maxclust32;
-	unsigned clust12, clust16, clust32;
-	int maxclustsize;
-	unsigned root_dir_sectors = cdiv(root_dir_entries * 32, sector_size);
+    /*
+     * If the filesystem is 8192 sectors or less (4 MB with 512-byte
+     * sectors, i.e. floppy size), don't align the data structures.
+     */
+    if (num_sectors <= 8192) {
+        if (align_structures && verbose >= 2)
+	    printf("Disabling alignment due to tiny filesystem\n");
 
-	/*
-	 * If the filesystem is 8192 sectors or less (4 MB with 512-byte
-	 * sectors, i.e. floppy size), don't align the data structures.
-	 */
-	if (num_sectors <= 8192) {
-	    if (align_structures && verbose >= 2)
-		printf("Disabling alignment due to tiny filesystem\n");
+        align_structures = FALSE;
+    }
 
-	    align_structures = FALSE;
-	}
+    if (sectors_per_cluster)
+        bs.cluster_size = maxclustsize = sectors_per_cluster;
+    else
+        /* An initial guess for bs.cluster_size should already be set */
+        maxclustsize = 128;
 
-	if (sectors_per_cluster)
-	    bs.cluster_size = maxclustsize = sectors_per_cluster;
-	else
-	    /* An initial guess for bs.cluster_size should already be set */
-	    maxclustsize = 128;
+    do {
+        fatdata32 = num_sectors
+	    - align_object(reserved_sectors, bs.cluster_size);
+        fatdata1216 = fatdata32
+	    - align_object(root_dir_sectors, bs.cluster_size);
 
-	do {
-	    fatdata32 = num_sectors
-		- align_object(reserved_sectors, bs.cluster_size);
-	    fatdata1216 = fatdata32
-		- align_object(root_dir_sectors, bs.cluster_size);
+        if (verbose >= 2)
+            printf("Trying with %d sectors/cluster:\n", bs.cluster_size);
 
-	    if (verbose >= 2)
-		printf("Trying with %d sectors/cluster:\n", bs.cluster_size);
+    /* The factor 2 below avoids cut-off errors for nr_fats == 1.
+     * The "nr_fats*3" is for the reserved first two FAT entries */
+    clust12 = 2 * ((long long)fatdata1216 * sector_size + nr_fats * 3) /
+        (2 * (int)bs.cluster_size * sector_size + nr_fats * 3);
+    fatlength12 = cdiv(((clust12 + 2) * 3 + 1) >> 1, sector_size);
+    fatlength12 = align_object(fatlength12, bs.cluster_size);
+    /* Need to recalculate number of clusters, since the unused parts of the
+     * FATS and data area together could make up space for an additional,
+     * not really present cluster. */
+    clust12 = (fatdata1216 - nr_fats * fatlength12) / bs.cluster_size;
+    maxclust12 = (fatlength12 * 2 * sector_size) / 3;
+    if (maxclust12 > MAX_CLUST_12)
+        maxclust12 = MAX_CLUST_12;
+    if (verbose >= 2)
+        printf("FAT12: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
+           clust12, fatlength12, maxclust12, MAX_CLUST_12);
+    if (clust12 > maxclust12 - 2) {
+        clust12 = 0;
+        if (verbose >= 2)
+            printf("FAT12: too much clusters\n");
+    }
 
-	    /* The factor 2 below avoids cut-off errors for nr_fats == 1.
-	     * The "nr_fats*3" is for the reserved first two FAT entries */
-	    clust12 = 2 * ((long long)fatdata1216 * sector_size + nr_fats * 3) /
-		(2 * (int)bs.cluster_size * sector_size + nr_fats * 3);
-	    fatlength12 = cdiv(((clust12 + 2) * 3 + 1) >> 1, sector_size);
-	    fatlength12 = align_object(fatlength12, bs.cluster_size);
-	    /* Need to recalculate number of clusters, since the unused parts of the
-	     * FATS and data area together could make up space for an additional,
-	     * not really present cluster. */
-	    clust12 = (fatdata1216 - nr_fats * fatlength12) / bs.cluster_size;
-	    maxclust12 = (fatlength12 * 2 * sector_size) / 3;
-	    if (maxclust12 > MAX_CLUST_12)
-		maxclust12 = MAX_CLUST_12;
-	    if (verbose >= 2)
-		printf("FAT12: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
-		       clust12, fatlength12, maxclust12, MAX_CLUST_12);
-	    if (clust12 > maxclust12 - 2) {
-		clust12 = 0;
-		if (verbose >= 2)
-		    printf("FAT12: too much clusters\n");
-	    }
-
-	    clust16 = ((long long)fatdata1216 * sector_size + nr_fats * 4) /
-		((int)bs.cluster_size * sector_size + nr_fats * 2);
-	    fatlength16 = cdiv((clust16 + 2) * 2, sector_size);
-	    fatlength16 = align_object(fatlength16, bs.cluster_size);
-	    /* Need to recalculate number of clusters, since the unused parts of the
-	     * FATS and data area together could make up space for an additional,
-	     * not really present cluster. */
-	    clust16 = (fatdata1216 - nr_fats * fatlength16) / bs.cluster_size;
-	    maxclust16 = (fatlength16 * sector_size) / 2;
-	    if (maxclust16 > MAX_CLUST_16)
-		maxclust16 = MAX_CLUST_16;
-	    if (verbose >= 2)
-		printf("FAT16: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
-		       clust16, fatlength16, maxclust16, MAX_CLUST_16);
-	    if (clust16 > maxclust16 - 2) {
-		if (verbose >= 2)
-		    printf("FAT16: too much clusters\n");
-		clust16 = 0;
-	    }
-	    /* The < 4078 avoids that the filesystem will be misdetected as having a
-	     * 12 bit FAT. */
-	    if (clust16 < FAT12_THRESHOLD
-		&& !(size_fat_by_user && size_fat == 16)) {
-		if (verbose >= 2)
-		    printf(clust16 < FAT12_THRESHOLD ?
-			   "FAT16: would be misdetected as FAT12\n" :
-			   "FAT16: too much clusters\n");
-		clust16 = 0;
-	    }
-
-	    clust32 = ((long long)fatdata32 * sector_size + nr_fats * 8) /
-		((int)bs.cluster_size * sector_size + nr_fats * 4);
-	    fatlength32 = cdiv((clust32 + 2) * 4, sector_size);
-	    fatlength32 = align_object(fatlength32, bs.cluster_size);
-	    /* Need to recalculate number of clusters, since the unused parts of the
-	     * FATS and data area together could make up space for an additional,
-	     * not really present cluster. */
-	    clust32 = (fatdata32 - nr_fats * fatlength32) / bs.cluster_size;
-	    maxclust32 = (fatlength32 * sector_size) / 4;
-	    if (maxclust32 > MAX_CLUST_32)
-		maxclust32 = MAX_CLUST_32;
-	    if (clust32 && clust32 < MIN_CLUST_32
-		&& !(size_fat_by_user && size_fat == 32)) {
-		clust32 = 0;
-		if (verbose >= 2)
-		    printf("FAT32: not enough clusters (%d)\n", MIN_CLUST_32);
-	    }
-	    if (verbose >= 2)
-		printf("FAT32: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
-		       clust32, fatlength32, maxclust32, MAX_CLUST_32);
-	    if (clust32 > maxclust32) {
-		clust32 = 0;
-		if (verbose >= 2)
-		    printf("FAT32: too much clusters\n");
-	    }
-
-	    if ((clust12 && (size_fat == 0 || size_fat == 12)) ||
-		(clust16 && (size_fat == 0 || size_fat == 16)) ||
-		(clust32 && size_fat == 32))
-		break;
-
-	    bs.cluster_size <<= 1;
-	} while (bs.cluster_size && bs.cluster_size <= maxclustsize);
-
-	/* Use the optimal FAT size if not specified;
-	 * FAT32 is (not yet) choosen automatically */
-	if (!size_fat) {
-	    size_fat = (clust16 > clust12) ? 16 : 12;
-	    if (verbose >= 2)
-		printf("Choosing %d bits for FAT\n", size_fat);
-	}
-
-	switch (size_fat) {
-	case 12:
-	    cluster_count = clust12;
-	    fat_length = fatlength12;
-	    bs.fat_length = htole16(fatlength12);
-	    memcpy(vi->fs_type, MSDOS_FAT12_SIGN, 8);
-	    break;
-
-	case 16:
-	    if (clust16 < FAT12_THRESHOLD) {
-		if (size_fat_by_user) {
-		    fprintf(stderr, "WARNING: Not enough clusters for a "
-			    "16 bit FAT! The filesystem will be\n"
-			    "misinterpreted as having a 12 bit FAT without "
-			    "mount option \"fat=16\".\n");
-		} else {
-		    fprintf(stderr, "This filesystem has an unfortunate size. "
-			    "A 12 bit FAT cannot provide\n"
-			    "enough clusters, but a 16 bit FAT takes up a little "
-			    "bit more space so that\n"
-			    "the total number of clusters becomes less than the "
-			    "threshold value for\n"
-			    "distinction between 12 and 16 bit FATs.\n");
-		    die("Make the filesystem a bit smaller manually.");
-		}
-	    }
-	    cluster_count = clust16;
-	    fat_length = fatlength16;
-	    bs.fat_length = htole16(fatlength16);
-	    memcpy(vi->fs_type, MSDOS_FAT16_SIGN, 8);
-	    break;
-
-	case 32:
-	    if (clust32 < MIN_CLUST_32)
-		fprintf(stderr,
-			"WARNING: Not enough clusters for a 32 bit FAT!\n");
-	    cluster_count = clust32;
-	    fat_length = fatlength32;
-	    bs.fat_length = htole16(0);
-	    bs.fat32.fat32_length = htole32(fatlength32);
-	    memcpy(vi->fs_type, MSDOS_FAT32_SIGN, 8);
-	    root_dir_entries = 0;
-	    break;
-
-	default:
-	    die("FAT not 12, 16 or 32 bits");
-	}
-
-	/* Adjust the reserved number of sectors for alignment */
-	reserved_sectors = align_object(reserved_sectors, bs.cluster_size);
-	bs.reserved = htole16(reserved_sectors);
-
-	/* Adjust the number of root directory entries to help enforce alignment */
-	if (align_structures) {
-	    root_dir_entries = align_object(root_dir_sectors, bs.cluster_size)
-		* (sector_size >> 5);
-	}
-    } else {
-	unsigned clusters, maxclust, fatdata;
-
-	/* GEMDOS always uses a 12 bit FAT on floppies, and always a 16 bit FAT on
-	 * hard disks. So use 12 bit if the size of the filesystem suggests that
-	 * this fs is for a floppy disk, if the user hasn't explicitly requested a
-	 * size.
-	 */
-	if (!size_fat)
-	    size_fat = (num_sectors == 1440 || num_sectors == 2400 ||
-			num_sectors == 2880 || num_sectors == 5760) ? 12 : 16;
+    clust16 = ((long long)fatdata1216 * sector_size + nr_fats * 4) /
+        ((int)bs.cluster_size * sector_size + nr_fats * 2);
+    fatlength16 = cdiv((clust16 + 2) * 2, sector_size);
+    fatlength16 = align_object(fatlength16, bs.cluster_size);
+    /* Need to recalculate number of clusters, since the unused parts of the
+     * FATS and data area together could make up space for an additional,
+     * not really present cluster. */
+    clust16 = (fatdata1216 - nr_fats * fatlength16) / bs.cluster_size;
+    maxclust16 = (fatlength16 * sector_size) / 2;
+    if (maxclust16 > MAX_CLUST_16)
+        maxclust16 = MAX_CLUST_16;
+    if (verbose >= 2)
+        printf("FAT16: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
+           clust16, fatlength16, maxclust16, MAX_CLUST_16);
+    if (clust16 > maxclust16 - 2) {
 	if (verbose >= 2)
-	    printf("Choosing %d bits for FAT\n", size_fat);
+           printf("FAT16: too much clusters\n");
+	clust16 = 0;
+    }
+    /* The < 4078 avoids that the filesystem will be misdetected as having a
+     * 12 bit FAT. */
+    if (clust16 < FAT12_THRESHOLD
+        && !(size_fat_by_user && size_fat == 16)) {
+        if (verbose >= 2)
+            printf(clust16 < FAT12_THRESHOLD ?
+                   "FAT16: would be misdetected as FAT12\n" :
+                   "FAT16: too much clusters\n");
+        clust16 = 0;
+    }
 
-	/* Atari format: cluster size should be 2, except explicitly requested by
-	 * the user, since GEMDOS doesn't like other cluster sizes very much.
-	 * Instead, tune the sector size for the FS to fit.
-	 */
-	bs.cluster_size = sectors_per_cluster ? sectors_per_cluster : 2;
-	if (!sector_size_set) {
-	    while (num_sectors > GEMDOS_MAX_SECTORS) {
-		num_sectors >>= 1;
-		sector_size <<= 1;
+    clust32 = ((long long)fatdata32 * sector_size + nr_fats * 8) /
+        ((int)bs.cluster_size * sector_size + nr_fats * 4);
+    fatlength32 = cdiv((clust32 + 2) * 4, sector_size);
+    fatlength32 = align_object(fatlength32, bs.cluster_size);
+    /* Need to recalculate number of clusters, since the unused parts of the
+     * FATS and data area together could make up space for an additional,
+     * not really present cluster. */
+    clust32 = (fatdata32 - nr_fats * fatlength32) / bs.cluster_size;
+    maxclust32 = (fatlength32 * sector_size) / 4;
+    if (maxclust32 > MAX_CLUST_32)
+        maxclust32 = MAX_CLUST_32;
+    if (clust32 && clust32 < MIN_CLUST_32
+        && !(size_fat_by_user && size_fat == 32)) {
+        clust32 = 0;
+        if (verbose >= 2)
+	    printf("FAT32: not enough clusters (%d)\n", MIN_CLUST_32);
+    }
+    if (verbose >= 2)
+        printf("FAT32: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
+	       clust32, fatlength32, maxclust32, MAX_CLUST_32);
+    if (clust32 > maxclust32) {
+        clust32 = 0;
+        if (verbose >= 2)
+            printf("FAT32: too much clusters\n");
+    }
+
+    if ((clust12 && (size_fat == 0 || size_fat == 12)) ||
+        (clust16 && (size_fat == 0 || size_fat == 16)) ||
+        (clust32 && size_fat == 32))
+        break;
+
+        bs.cluster_size <<= 1;
+    } while (bs.cluster_size && bs.cluster_size <= maxclustsize);
+
+    /* Use the optimal FAT size if not specified;
+     * FAT32 is (not yet) choosen automatically */
+    if (!size_fat) {
+        size_fat = (clust16 > clust12) ? 16 : 12;
+        if (verbose >= 2)
+	   printf("Choosing %d bits for FAT\n", size_fat);
+    }
+
+    switch (size_fat) {
+    case 12:
+        cluster_count = clust12;
+        fat_length = fatlength12;
+        bs.fat_length = htole16(fatlength12);
+        memcpy(vi->fs_type, MSDOS_FAT12_SIGN, 8);
+        break;
+
+    case 16:
+        if (clust16 < FAT12_THRESHOLD) {
+	    if (size_fat_by_user) {
+	        fprintf(stderr, "WARNING: Not enough clusters for a "
+		        "16 bit FAT! The filesystem will be\n"
+		        "misinterpreted as having a 12 bit FAT without "
+		        "mount option \"fat=16\".\n");
+	    } else {
+	         fprintf(stderr, "This filesystem has an unfortunate size. "
+		        "A 12 bit FAT cannot provide\n"
+		        "enough clusters, but a 16 bit FAT takes up a little "
+		        "bit more space so that\n"
+		        "the total number of clusters becomes less than the "
+		        "threshold value for\n"
+		        "distinction between 12 and 16 bit FATs.\n");
+	        die("Make the filesystem a bit smaller manually.");
 	    }
-	}
-	if (verbose >= 2)
-	    printf("Sector size must be %d to have less than %d log. sectors\n",
-		   sector_size, GEMDOS_MAX_SECTORS);
+        }
+        cluster_count = clust16;
+        fat_length = fatlength16;
+        bs.fat_length = htole16(fatlength16);
+        memcpy(vi->fs_type, MSDOS_FAT16_SIGN, 8);
+        break;
 
-	/* Check if there are enough FAT indices for how much clusters we have */
-	do {
-	    fatdata = num_sectors - cdiv(root_dir_entries * 32, sector_size) -
-		reserved_sectors;
-	    /* The factor 2 below avoids cut-off errors for nr_fats == 1 and
-	     * size_fat == 12
-	     * The "2*nr_fats*size_fat/8" is for the reserved first two FAT entries
-	     */
-	    clusters =
-		(2 *
-		 ((long long)fatdata * sector_size -
-		  2 * nr_fats * size_fat / 8)) / (2 * ((int)bs.cluster_size *
-						       sector_size +
-						       nr_fats * size_fat / 8));
-	    fat_length = cdiv((clusters + 2) * size_fat / 8, sector_size);
-	    /* Need to recalculate number of clusters, since the unused parts of the
-	     * FATS and data area together could make up space for an additional,
-	     * not really present cluster. */
-	    clusters = (fatdata - nr_fats * fat_length) / bs.cluster_size;
-	    maxclust = (fat_length * sector_size * 8) / size_fat;
-	    if (verbose >= 2)
-		printf("ss=%d: #clu=%d, fat_len=%d, maxclu=%d\n",
-		       sector_size, clusters, fat_length, maxclust);
+    case 32:
+        if (clust32 < MIN_CLUST_32)
+	    fprintf(stderr,
+                    "WARNING: Not enough clusters for a 32 bit FAT!\n");
+        cluster_count = clust32;
+        fat_length = fatlength32;
+        bs.fat_length = htole16(0);
+        bs.fat32.fat32_length = htole32(fatlength32);
+        memcpy(vi->fs_type, MSDOS_FAT32_SIGN, 8);
+        root_dir_entries = 0;
+        break;
 
-	    /* last 10 cluster numbers are special (except FAT32: 4 high bits rsvd);
-	     * first two numbers are reserved */
-	    if (maxclust <=
-		(size_fat == 32 ? MAX_CLUST_32 : (1 << size_fat) - 0x10)
-		&& clusters <= maxclust - 2)
-		break;
-	    if (verbose >= 2)
-		printf(clusters > maxclust - 2 ?
-		       "Too many clusters\n" : "FAT too big\n");
+    default:
+        die("FAT not 12, 16 or 32 bits");
+    }
 
-	    /* need to increment sector_size once more to  */
-	    if (sector_size_set)
-		die("With this sector size, the maximum number of FAT entries "
-		    "would be exceeded.");
-	    num_sectors >>= 1;
-	    sector_size <<= 1;
-	} while (sector_size <= GEMDOS_MAX_SECTOR_SIZE);
+    /* Adjust the reserved number of sectors for alignment */
+    reserved_sectors = align_object(reserved_sectors, bs.cluster_size);
+    bs.reserved = htole16(reserved_sectors);
 
-	if (sector_size > GEMDOS_MAX_SECTOR_SIZE)
-	    die("Would need a sector size > 16k, which GEMDOS can't work with");
-
-	cluster_count = clusters;
-	if (size_fat != 32)
-	    bs.fat_length = htole16(fat_length);
-	else {
-	    bs.fat_length = 0;
-	    bs.fat32.fat32_length = htole32(fat_length);
-	}
+    /* Adjust the number of root directory entries to help enforce alignment */
+    if (align_structures) {
+        root_dir_entries = align_object(root_dir_sectors, bs.cluster_size)
+	    * (sector_size >> 5);
     }
 
     bs.sector_size[0] = (char)(sector_size & 0x00ff);
@@ -1010,14 +910,6 @@ static void setup_tables(void)
 	memset(&bs.fat32.reserved2, 0, sizeof(bs.fat32.reserved2));
     }
 
-    if (atari_format) {
-	/* Just some consistency checks */
-	if (num_sectors >= GEMDOS_MAX_SECTORS)
-	    die("GEMDOS can't handle more than 65531 sectors");
-	else if (num_sectors >= OLDGEMDOS_MAX_SECTORS)
-	    printf("Warning: More than 32765 sector need TOS 1.04 "
-		   "or higher.\n");
-    }
     if (num_sectors >= 65536) {
 	bs.sectors[0] = (char)0;
 	bs.sectors[1] = (char)0;
@@ -1025,12 +917,10 @@ static void setup_tables(void)
     } else {
 	bs.sectors[0] = (char)(num_sectors & 0x00ff);
 	bs.sectors[1] = (char)((num_sectors & 0xff00) >> 8);
-	if (!atari_format)
-	    bs.total_sect = htole32(0);
+        bs.total_sect = htole32(0);
     }
 
-    if (!atari_format)
-	vi->ext_boot_sign = MSDOS_EXT_SIGN;
+    vi->ext_boot_sign = MSDOS_EXT_SIGN;
 
     if (!cluster_count) {
 	if (sectors_per_cluster)	/* If yes, die if we'd spec'd sectors per cluster */
@@ -1079,7 +969,7 @@ static void setup_tables(void)
 		   root_dir_entries, root_dir_sectors);
 	}
 	printf("Volume ID is %08lx, ", volume_id &
-	       (atari_format ? 0x00ffffff : 0xffffffff));
+	       (0xffffffff));
 	if (strcmp(volume_name, NO_NAME))
 	    printf("volume label %s.\n", volume_name);
 	else
@@ -1253,34 +1143,6 @@ Usage: mkfs.befs [-n volume-name] [--help] /dev/name [blocks]\n");
     exit(exitval);
 }
 
-/*
- * ++roman: On m68k, check if this is an Atari; if yes, turn on Atari variant
- * of MS-DOS filesystem by default.
- */
-static void check_atari(void)
-{
-#ifdef __mc68000__
-    FILE *f;
-    char line[128], *p;
-
-    if (!(f = fopen("/proc/hardware", "r"))) {
-	perror("/proc/hardware");
-	return;
-    }
-
-    while (fgets(line, sizeof(line), f)) {
-	if (strncmp(line, "Model:", 6) == 0) {
-	    p = line + 6;
-	    p += strspn(p, " \t");
-	    if (strncmp(p, "Atari ", 6) == 0)
-		atari_format = 1;
-	    break;
-	}
-    }
-    fclose(f);
-#endif
-}
-
 /* The "main" entry point into the utility */
 
 int main(int argc, char **argv)
@@ -1312,7 +1174,6 @@ int main(int argc, char **argv)
     gettimeofday(&create_timeval, NULL);
     create_time = create_timeval.tv_sec;
     volume_id = (uint32_t) ((create_timeval.tv_sec << 20) | create_timeval.tv_usec);	/* Default volume ID = creation time, fudged for more uniqueness */
-    check_atari();
 
     printf("mkfs.befs " VERSION " (" VERSION_DATE ")\n");
 
