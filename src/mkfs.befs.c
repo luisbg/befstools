@@ -237,8 +237,6 @@ static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
 static int hidden_sectors_by_user = 0;  /* -h option invoked */
-static int drive_number_option = 0;     /* drive number */
-static int drive_number_by_user = 0;    /* drive number option invoked */
 static int fat_media_byte = 0;  /* media byte in header and starting FAT */
 static int malloc_entire_fat = FALSE;   /* Whether we should malloc() the entire FAT or not */
 static int align_structures = TRUE;     /* Whether to enforce alignment */
@@ -551,9 +549,6 @@ static void setup_tables(void)
         vi->drive_number = 0x80;
     else
         vi->drive_number = 0x00;
-
-    if (drive_number_by_user)
-        vi->drive_number = (char) drive_number_option;
 
     if (size_fat == 32) {
         /* Under FAT32, the root dir is in a cluster chain, and this is
