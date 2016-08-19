@@ -236,7 +236,6 @@ static int sectors_per_cluster = 0;     /* Number of sectors per disk cluster */
 static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
-static int hidden_sectors_by_user = 0;  /* -h option invoked */
 static int fat_media_byte = 0;  /* media byte in header and starting FAT */
 static int malloc_entire_fat = FALSE;   /* Whether we should malloc() the entire FAT or not */
 static int align_structures = TRUE;     /* Whether to enforce alignment */
@@ -496,7 +495,7 @@ static void establish_params(struct device_info *info)
         sec_per_track = info->geom_sectors;
     }
 
-    if (!hidden_sectors_by_user && info->geom_start >= 0)
+    if (info->geom_start >= 0)
         hidden_sectors = htole32(info->geom_start);
 
     if (!root_dir_entries)
