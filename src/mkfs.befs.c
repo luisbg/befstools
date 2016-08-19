@@ -221,7 +221,6 @@ static int nr_fats = 2;         /* Default number of FATs to produce */
 static int size_fat = 0;        /* Size in bits of FAT entries */
 static int size_fat_by_user = 0;        /* 1 if FAT size user selected */
 static int dev = -1;            /* FS block device file handle */
-static int ignore_full_disk = 0;        /* Ignore warning about 'full' disk devices */
 static struct msdos_boot_sector bs;     /* Boot sector data */
 static int start_data_sector;   /* Sector number for the start of the data area */
 static int start_data_block;    /* Block number for the start of the data area */
@@ -1186,15 +1185,12 @@ int main(int argc, char **argv)
         blocks = cblocks;
     }
 
-    /*
-     * Ignore any 'full' fixed disk devices, if -I is not given.
-     */
-    if (!ignore_full_disk && devinfo.type == TYPE_FIXED &&
+    if (devinfo.type == TYPE_FIXED &&
         devinfo.partition == 0)
-        die("Device partition expected, not making filesystem on entire device '%s' (use -I to override)");
+        die("Device partition expected, not making filesystem on entire device '%s'");
 
-    if (!ignore_full_disk && devinfo.has_children > 0)
-        die("Partitions or virtual mappings on device '%s', not making filesystem (use -I to override)");
+    if (devinfo.has_children > 0)
+        die("Partitions or virtual mappings on device '%s', not making filesystem");
 
     if (devinfo.sector_size > 0) {
         if (sector_size_set) {
