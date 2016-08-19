@@ -207,7 +207,6 @@ char dummy_boot_code[BOOTCODE_SIZE] = "\x0e"    /* push cs */
 
 static const char *program_name = "mkfs.befs";  /* Name of the program */
 static char *device_name = NULL;        /* Name of the device on which to create the filesystem */
-static int check = FALSE;       /* Default to no readablity checking */
 static int verbose = 0;         /* Default to verbose mode off */
 static long volume_id;          /* Volume ID number */
 static time_t create_time;      /* Creation time */
@@ -223,7 +222,6 @@ static int size_fat = 0;        /* Size in bits of FAT entries */
 static int size_fat_by_user = 0;        /* 1 if FAT size user selected */
 static int dev = -1;            /* FS block device file handle */
 static int ignore_full_disk = 0;        /* Ignore warning about 'full' disk devices */
-static off_t currently_testing = 0;     /* Block currently being tested (if autodetect bad blocks) */
 static struct msdos_boot_sector bs;     /* Boot sector data */
 static int start_data_sector;   /* Sector number for the start of the data area */
 static int start_data_block;    /* Block number for the start of the data area */
@@ -254,9 +252,6 @@ static int invariant = 0;       /* Whether to set normally randomized or
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void mark_FAT_cluster(int cluster, unsigned int value);
 static void mark_FAT_sector(int sector, unsigned int value);
-static long do_check(char *buffer, int try, off_t current_block);
-static void alarm_intr(int alnum);
-static void check_blocks(void);
 static void get_list_blocks(char *filename);
 static void check_mount(char *device_name);
 static void establish_params(struct device_info *info);
@@ -331,88 +326,6 @@ static void mark_FAT_sector(int sector, unsigned int value)
         die("Internal error: out of range sector number in mark_FAT_sector");
 
     mark_FAT_cluster(cluster, value);
-}
-
-/* Perform a test on a block.  Return the number of blocks that could be read successfully */
-
-static long do_check(char *buffer, int try, off_t current_block)
-{
-    long got;
-
-    if (lseek(dev, current_block * BLOCK_SIZE, SEEK_SET)        /* Seek to the correct location */
-        !=current_block * BLOCK_SIZE)
-        die("seek failed during testing for blocks");
-
-    got = read(dev, buffer, try * BLOCK_SIZE);  /* Try reading! */
-    if (got < 0)
-        got = 0;
-
-    if (got & (BLOCK_SIZE - 1))
-        printf("Unexpected values in do_check: probably bugs\n");
-    got /= BLOCK_SIZE;
-
-    return got;
-}
-
-/* Alarm clock handler - display the status of the quest for bad blocks!  Then retrigger the alarm for five senconds
-   later (so we can come here again) */
-
-static void alarm_intr(int alnum)
-{
-    (void) alnum;
-
-    if (currently_testing >= blocks)
-        return;
-
-    signal(SIGALRM, alarm_intr);
-    alarm(5);
-    if (!currently_testing)
-        return;
-
-    printf("%lld... ", (unsigned long long) currently_testing);
-    fflush(stdout);
-}
-
-static void check_blocks(void)
-{
-    int try, got;
-    int i;
-    static char blkbuf[BLOCK_SIZE * TEST_BUFFER_BLOCKS];
-
-    if (verbose) {
-        printf("Searching for bad blocks ");
-        fflush(stdout);
-    }
-    currently_testing = 0;
-    if (verbose) {
-        signal(SIGALRM, alarm_intr);
-        alarm(5);
-    }
-    try = TEST_BUFFER_BLOCKS;
-    while (currently_testing < blocks) {
-        if (currently_testing + try > blocks)
-            try = blocks - currently_testing;
-        got = do_check(blkbuf, try, currently_testing);
-        currently_testing += got;
-        if (got == try) {
-            try = TEST_BUFFER_BLOCKS;
-            continue;
-        } else
-            try = 1;
-        if (currently_testing < start_data_block)
-            die("bad blocks before data-area: cannot make fs");
-
-        for (i = 0; i < SECTORS_PER_BLOCK; i++) /* Mark all of the sectors in the block as bad */
-            mark_sector_bad(currently_testing * SECTORS_PER_BLOCK + i);
-        badblocks++;
-        currently_testing++;
-    }
-
-    if (verbose)
-        printf("\n");
-
-    if (badblocks)
-        printf("%d bad block%s\n", badblocks, (badblocks > 1) ? "s" : "");
 }
 
 static void get_list_blocks(char *filename)
@@ -1252,9 +1165,6 @@ int main(int argc, char **argv)
     if (create && !blocks_specified)
         die("Need intended size with -C.");
 
-    if (check && listfile)      /* Auto and specified bad block handling are mutually */
-        die("-c and -l are incompatible");      /* exclusive of each other! */
-
     if (!create) {
         check_mount(device_name);       /* Is the device already mounted? */
         dev = open(device_name, O_EXCL | O_RDWR);       /* Is it a suitable device to build the FS on? */
@@ -1334,9 +1244,7 @@ int main(int argc, char **argv)
 
     setup_tables();             /* Establish the filesystem tables */
 
-    if (check)                  /* Determine any bad block locations and mark them */
-        check_blocks();
-    else if (listfile)
+    if (listfile)
         get_list_blocks(listfile);
 
     write_tables();             /* Write the filesystem tables away! */
