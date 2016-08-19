@@ -74,10 +74,6 @@
 
 #define die( str ) fatal_error( "%s: " str "\n" )
 
-/* Mark a cluster in the FAT as bad */
-
-#define mark_sector_bad( sector ) mark_FAT_sector( sector, FAT_BAD )
-
 /* Compute ceil(a/b) */
 
 static inline int cdiv(int a, int b)
@@ -216,7 +212,6 @@ static int sector_size = 512;   /* Size of a logical sector */
 static int sector_size_set = 0; /* User selected sector size */
 static int backup_boot = 0;     /* Sector# of backup boot sector */
 static int reserved_sectors = 0;        /* Number of reserved sectors */
-static int badblocks = 0;       /* Number of bad blocks in the filesystem */
 static int nr_fats = 2;         /* Default number of FATs to produce */
 static int size_fat = 0;        /* Size in bits of FAT entries */
 static int size_fat_by_user = 0;        /* 1 if FAT size user selected */
@@ -247,8 +242,6 @@ static int invariant = 0;       /* Whether to set normally randomized or
 
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void mark_FAT_cluster(int cluster, unsigned int value);
-static void mark_FAT_sector(int sector, unsigned int value);
-static void get_list_blocks(char *filename);
 static void check_mount(char *device_name);
 static void establish_params(struct device_info *info);
 static void setup_tables(void);
@@ -309,98 +302,6 @@ static void mark_FAT_cluster(int cluster, unsigned int value)
     default:
         die("Bad FAT size (not 12, 16, or 32)");
     }
-}
-
-/* Mark a specified sector as having a particular value in it's FAT entry */
-
-static void mark_FAT_sector(int sector, unsigned int value)
-{
-    int cluster = (sector - start_data_sector) / (int) (bs.cluster_size) /
-        (sector_size / HARD_SECTOR_SIZE) + 2;
-
-    if (sector < start_data_sector || sector >= num_sectors)
-        die("Internal error: out of range sector number in mark_FAT_sector");
-
-    mark_FAT_cluster(cluster, value);
-}
-
-static void get_list_blocks(char *filename)
-{
-    int i;
-    FILE *listfile;
-    long blockno;
-    char *line = NULL;
-    size_t linesize = 0;
-    int lineno = 0;
-    char *end, *check;
-
-    listfile = fopen(filename, "r");
-    if (listfile == (FILE *) NULL)
-        die("Can't open file of bad blocks");
-
-    while (1) {
-        lineno++;
-        ssize_t length = getline(&line, &linesize, listfile);
-        if (length < 0) {
-            if (errno == 0)     /* end of file */
-                break;
-
-            perror("getline");
-            die("Error while reading bad blocks file");
-        }
-
-        errno = 0;
-        blockno = strtol(line, &end, 10);
-
-        if (errno) {
-            fprintf(stderr,
-                    "While converting bad block number in line %d: %s\n",
-                    lineno, strerror(errno));
-            die("Error in bad blocks file");
-        }
-
-        check = end;
-        while (*check) {
-            if (!isspace(*check)) {
-                fprintf(stderr,
-                        "Badly formed number in bad blocks file line %d\n",
-                        lineno);
-                die("Error in bad blocks file");
-            }
-
-            check++;
-        }
-
-        /* ignore empty or white space only lines */
-        if (end == line)
-            continue;
-
-        /* Mark all of the sectors in the block as bad */
-        for (i = 0; i < SECTORS_PER_BLOCK; i++) {
-            unsigned long sector = blockno * SECTORS_PER_BLOCK + i;
-
-            if (sector < start_data_sector) {
-                fprintf(stderr, "Block number %ld is before data area\n",
-                        blockno);
-                die("Error in bad blocks file");
-            }
-
-            if (sector >= num_sectors) {
-                fprintf(stderr,
-                        "Block number %ld is behind end of filesystem\n",
-                        blockno);
-                die("Error in bad blocks file");
-            }
-
-            mark_sector_bad(sector);
-        }
-        badblocks++;
-    }
-    fclose(listfile);
-    free(line);
-
-    if (badblocks)
-        printf("%d bad block%s\n", badblocks, (badblocks > 1) ? "s" : "");
 }
 
 /* Check to see if the specified device is currently mounted - abort if it is */
@@ -1069,7 +970,6 @@ int main(int argc, char **argv)
 {
     int c;
     char *tmp;
-    char *listfile = NULL;
     struct device_info devinfo;
     int i = 0;
     uint64_t cblocks = 0;
@@ -1215,10 +1115,6 @@ int main(int argc, char **argv)
     /* Establish the media parameters */
 
     setup_tables();             /* Establish the filesystem tables */
-
-    if (listfile)
-        get_list_blocks(listfile);
-
     write_tables();             /* Write the filesystem tables away! */
 
     exit(0);                    /* Terminate with no errors! */
