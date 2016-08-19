@@ -230,7 +230,6 @@ static int sectors_per_cluster = 0;     /* Number of sectors per disk cluster */
 static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
-static int fat_media_byte = 0;  /* media byte in header and starting FAT */
 static int malloc_entire_fat = FALSE;   /* Whether we should malloc() the entire FAT or not */
 static int align_structures = TRUE;     /* Whether to enforce alignment */
 static int orphaned_sectors = 0;        /* Sectors that exist in the last block of filesystem */
@@ -440,9 +439,6 @@ static void setup_tables(void)
     memcpy((char *) bs.system_id, "mkfs.fat", strlen("mkfs.fat"));
     if (sectors_per_cluster)
         bs.cluster_size = (char) sectors_per_cluster;
-
-    if (fat_media_byte)
-        bs.media = (char) fat_media_byte;
 
     if (bs.media == 0xf8)
         vi->drive_number = 0x80;
