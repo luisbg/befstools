@@ -226,7 +226,6 @@ static unsigned char *info_sector;      /* FAT32 info sector */
 static struct msdos_dir_entry *root_dir;        /* Root directory */
 static int size_root_dir;       /* Size of the root directory in bytes */
 static uint32_t num_sectors;    /* Total number of sectors in device */
-static int sectors_per_cluster = 0;     /* Number of sectors per disk cluster */
 static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
@@ -437,8 +436,6 @@ static void setup_tables(void)
         (size_fat == 32 ? &bs.fat32.vi : &bs.oldfat.vi);
 
     memcpy((char *) bs.system_id, "mkfs.fat", strlen("mkfs.fat"));
-    if (sectors_per_cluster)
-        bs.cluster_size = (char) sectors_per_cluster;
 
     if (bs.media == 0xf8)
         vi->drive_number = 0x80;
@@ -525,11 +522,8 @@ static void setup_tables(void)
         align_structures = FALSE;
     }
 
-    if (sectors_per_cluster)
-        bs.cluster_size = maxclustsize = sectors_per_cluster;
-    else
-        /* An initial guess for bs.cluster_size should already be set */
-        maxclustsize = 128;
+    /* An initial guess for bs.cluster_size should already be set */
+    maxclustsize = 128;
 
     do {
         fatdata32 = num_sectors
@@ -736,10 +730,7 @@ static void setup_tables(void)
     vi->ext_boot_sign = MSDOS_EXT_SIGN;
 
     if (!cluster_count) {
-        if (sectors_per_cluster)        /* If yes, die if we'd spec'd sectors per cluster */
-            die("Too many clusters for filesystem - try more sectors per cluster");
-        else
-            die("Attempting to create a too large filesystem");
+        die("Attempting to create a too large filesystem");
     }
     fat_entries = cluster_count + 2;
 
