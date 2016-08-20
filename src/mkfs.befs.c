@@ -982,7 +982,7 @@ int main(int argc, char **argv)
 
     printf("mkfs.befs " VERSION " (" VERSION_DATE ")\n");
 
-    while ((c = getopt_long(argc, argv, "n:v", long_options, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "n:v", long_options, NULL)) != -1) {
         /* Scan the command line for options */
         switch (c) {
         case 'n':              /* n : Volume name */
@@ -1015,6 +1015,7 @@ int main(int argc, char **argv)
             printf("Unknown option: %c\n", c);
             usage(1);
         }
+    }
 
     if (optind == argc || !argv[optind]) {
         printf("No device specified.\n");
