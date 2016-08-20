@@ -171,19 +171,6 @@ int blkdev_get_size(int fd, unsigned long long *bytes)
     return 0;
 }
 
-/* get 512-byte sector count */
-int blkdev_get_sectors(int fd, unsigned long long *sectors)
-{
-    unsigned long long bytes;
-
-    if (blkdev_get_size(fd, &bytes) == 0) {
-        *sectors = (bytes >> 9);
-        return 0;
-    }
-
-    return -1;
-}
-
 /*
  * Get logical sector size.
  *

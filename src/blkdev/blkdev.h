@@ -100,9 +100,6 @@ off_t blkdev_find_size(int fd);
 /* get size in bytes */
 int blkdev_get_size(int fd, unsigned long long *bytes);
 
-/* get 512-byte sector count */
-int blkdev_get_sectors(int fd, unsigned long long *sectors);
-
 /* get hardware sector size */
 int blkdev_get_sector_size(int fd, int *sector_size);
 
