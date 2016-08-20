@@ -70,11 +70,6 @@
 
 #endif                          /* __linux */
 
-
-#ifdef APPLE_DARWIN
-#define BLKGETSIZE DKIOCGETBLOCKCOUNT32
-#endif
-
 #ifndef HDIO_GETGEO
 #ifdef __linux__
 #define HDIO_GETGEO 0x0301
