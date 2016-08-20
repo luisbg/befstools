@@ -956,10 +956,7 @@ Usage: mkfs.befs [-n volume-name] [--help] /dev/name [blocks]\n");
 int main(int argc, char **argv)
 {
     int c;
-    char *tmp;
     struct device_info devinfo;
-    uint64_t cblocks = 0;
-    int blocks_specified = 0;
     struct timeval create_timeval;
 
     enum { OPT_HELP = 1000, OPT_INVARIANT, };
@@ -1019,18 +1016,6 @@ int main(int argc, char **argv)
     device_name = argv[optind++];
 
     if (optind != argc) {
-        blocks_specified = 1;
-        blocks = strtoull(argv[optind], &tmp, 0);
-
-        if (*tmp) {
-            printf("Bad block count : %s\n", argv[optind]);
-            usage(1);
-        }
-
-        optind++;
-    }
-
-    if (optind != argc) {
         fprintf(stderr, "Excess arguments on command line\n");
         usage(1);
     }
@@ -1053,19 +1038,8 @@ int main(int argc, char **argv)
     if (devinfo.sector_size > 0)
         sector_size = devinfo.sector_size;
 
-    cblocks = devinfo.size / BLOCK_SIZE;
+    blocks = devinfo.size / BLOCK_SIZE;
     orphaned_sectors = (devinfo.size % BLOCK_SIZE) / sector_size;
-
-    if (blocks_specified) {
-        if (blocks != cblocks) {
-            fprintf(stderr, "Warning: block count mismatch: ");
-            fprintf(stderr, "found %llu but assuming %llu.\n",
-                    (unsigned long long) cblocks,
-                    (unsigned long long) blocks);
-        }
-    } else {
-        blocks = cblocks;
-    }
 
     if (devinfo.type == TYPE_FIXED &&
         devinfo.partition == 0)
