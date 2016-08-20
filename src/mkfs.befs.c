@@ -1050,9 +1050,6 @@ int main(int argc, char **argv)
         die("Partitions or virtual mappings on device '%s',"
             " not making filesystem");
 
-    if (devinfo.sector_size > 0)
-        sector_size = devinfo.sector_size;
-
     if (sector_size > 4096)
         fprintf(stderr,
                 "Warning: sector size %d > 4096 is non-standard,"
