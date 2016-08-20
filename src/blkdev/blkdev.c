@@ -30,7 +30,6 @@
 #endif
 
 #include "blkdev.h"
-#include "linux_version.h"
 
 static long blkdev_valid_offset(int fd, off_t offset)
 {
@@ -84,16 +83,8 @@ int blkdev_get_size(int fd, unsigned long long *bytes)
 
 #ifdef BLKGETSIZE64
     {
-#ifdef __linux__
-        int ver = get_linux_version();
-
-        /* kernels 2.4.15-2.4.17, had a broken BLKGETSIZE64 */
-        if (ver >= KERNEL_VERSION(2, 6, 0) ||
-            (ver >= KERNEL_VERSION(2, 4, 18)
-             && ver < KERNEL_VERSION(2, 5, 0)))
-#endif
-            if (ioctl(fd, BLKGETSIZE64, bytes) >= 0)
-                return 0;
+      if (ioctl(fd, BLKGETSIZE64, bytes) >= 0)
+          return 0;
     }
 #endif                          /* BLKGETSIZE64 */
 

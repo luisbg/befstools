@@ -22,8 +22,7 @@ noinst_PROGRAMS = testdevinfo
 
 mkfs_common_sources = device_info.c device_info.h \
 		      blkdev/blkdev.c blkdev/blkdev.h \
-		      endian_compat.h \
-		      blkdev/linux_version.c blkdev/linux_version.h
+		      endian_compat.h
 mkfs_befs_SOURCES  = mkfs.befs.c befs.h $(mkfs_common_sources)
 mkfs_befs_CPPFLAGS = -I$(srcdir)/blkdev
 mkfs_befs_CFLAGS   = $(AM_CFLAGS) $(UDEV_CFLAGS)

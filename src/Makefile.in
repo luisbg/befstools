@@ -121,16 +121,14 @@ befslabel_OBJECTS = $(am_befslabel_OBJECTS)
 befslabel_LDADD = $(LDADD)
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = mkfs_befs-device_info.$(OBJEXT) \
-	blkdev/mkfs_befs-blkdev.$(OBJEXT) \
-	blkdev/mkfs_befs-linux_version.$(OBJEXT)
+	blkdev/mkfs_befs-blkdev.$(OBJEXT)
 am_mkfs_befs_OBJECTS = mkfs_befs-mkfs.befs.$(OBJEXT) $(am__objects_1)
 mkfs_befs_OBJECTS = $(am_mkfs_befs_OBJECTS)
 mkfs_befs_LDADD = $(LDADD)
 mkfs_befs_LINK = $(CCLD) $(mkfs_befs_CFLAGS) $(CFLAGS) \
 	$(mkfs_befs_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_2 = testdevinfo-device_info.$(OBJEXT) \
-	blkdev/testdevinfo-blkdev.$(OBJEXT) \
-	blkdev/testdevinfo-linux_version.$(OBJEXT)
+	blkdev/testdevinfo-blkdev.$(OBJEXT)
 am_testdevinfo_OBJECTS = testdevinfo-testdevinfo.$(OBJEXT) \
 	$(am__objects_2)
 testdevinfo_OBJECTS = $(am_testdevinfo_OBJECTS)
@@ -299,8 +297,7 @@ AM_CFLAGS = -Wall -Wextra -Wno-sign-compare -Wno-missing-field-initializers \
 
 mkfs_common_sources = device_info.c device_info.h \
 		      blkdev/blkdev.c blkdev/blkdev.h \
-		      endian_compat.h \
-		      blkdev/linux_version.c blkdev/linux_version.h
+		      endian_compat.h
 
 mkfs_befs_SOURCES = mkfs.befs.c befs.h $(mkfs_common_sources)
 mkfs_befs_CPPFLAGS = -I$(srcdir)/blkdev
@@ -405,15 +402,11 @@ blkdev/$(DEPDIR)/$(am__dirstamp):
 	@: > blkdev/$(DEPDIR)/$(am__dirstamp)
 blkdev/mkfs_befs-blkdev.$(OBJEXT): blkdev/$(am__dirstamp) \
 	blkdev/$(DEPDIR)/$(am__dirstamp)
-blkdev/mkfs_befs-linux_version.$(OBJEXT): blkdev/$(am__dirstamp) \
-	blkdev/$(DEPDIR)/$(am__dirstamp)
 
 mkfs.befs$(EXEEXT): $(mkfs_befs_OBJECTS) $(mkfs_befs_DEPENDENCIES) $(EXTRA_mkfs_befs_DEPENDENCIES) 
 	@rm -f mkfs.befs$(EXEEXT)
 	$(AM_V_CCLD)$(mkfs_befs_LINK) $(mkfs_befs_OBJECTS) $(mkfs_befs_LDADD) $(LIBS)
 blkdev/testdevinfo-blkdev.$(OBJEXT): blkdev/$(am__dirstamp) \
-	blkdev/$(DEPDIR)/$(am__dirstamp)
-blkdev/testdevinfo-linux_version.$(OBJEXT): blkdev/$(am__dirstamp) \
 	blkdev/$(DEPDIR)/$(am__dirstamp)
 
 testdevinfo$(EXEEXT): $(testdevinfo_OBJECTS) $(testdevinfo_DEPENDENCIES) $(EXTRA_testdevinfo_DEPENDENCIES) 
@@ -438,9 +431,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdevinfo-device_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testdevinfo-testdevinfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/mkfs_befs-blkdev.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/mkfs_befs-linux_version.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/testdevinfo-blkdev.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@blkdev/$(DEPDIR)/testdevinfo-linux_version.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -500,20 +491,6 @@ blkdev/mkfs_befs-blkdev.obj: blkdev/blkdev.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_befs-blkdev.obj `if test -f 'blkdev/blkdev.c'; then $(CYGPATH_W) 'blkdev/blkdev.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/blkdev.c'; fi`
 
-blkdev/mkfs_befs-linux_version.o: blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_befs-linux_version.o -MD -MP -MF blkdev/$(DEPDIR)/mkfs_befs-linux_version.Tpo -c -o blkdev/mkfs_befs-linux_version.o `test -f 'blkdev/linux_version.c' || echo '$(srcdir)/'`blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_befs-linux_version.Tpo blkdev/$(DEPDIR)/mkfs_befs-linux_version.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/linux_version.c' object='blkdev/mkfs_befs-linux_version.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_befs-linux_version.o `test -f 'blkdev/linux_version.c' || echo '$(srcdir)/'`blkdev/linux_version.c
-
-blkdev/mkfs_befs-linux_version.obj: blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -MT blkdev/mkfs_befs-linux_version.obj -MD -MP -MF blkdev/$(DEPDIR)/mkfs_befs-linux_version.Tpo -c -o blkdev/mkfs_befs-linux_version.obj `if test -f 'blkdev/linux_version.c'; then $(CYGPATH_W) 'blkdev/linux_version.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/linux_version.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/mkfs_befs-linux_version.Tpo blkdev/$(DEPDIR)/mkfs_befs-linux_version.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/linux_version.c' object='blkdev/mkfs_befs-linux_version.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mkfs_befs_CPPFLAGS) $(CPPFLAGS) $(mkfs_befs_CFLAGS) $(CFLAGS) -c -o blkdev/mkfs_befs-linux_version.obj `if test -f 'blkdev/linux_version.c'; then $(CYGPATH_W) 'blkdev/linux_version.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/linux_version.c'; fi`
-
 testdevinfo-testdevinfo.o: testdevinfo.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testdevinfo_CPPFLAGS) $(CPPFLAGS) $(testdevinfo_CFLAGS) $(CFLAGS) -MT testdevinfo-testdevinfo.o -MD -MP -MF $(DEPDIR)/testdevinfo-testdevinfo.Tpo -c -o testdevinfo-testdevinfo.o `test -f 'testdevinfo.c' || echo '$(srcdir)/'`testdevinfo.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/testdevinfo-testdevinfo.Tpo $(DEPDIR)/testdevinfo-testdevinfo.Po
@@ -555,20 +532,6 @@ blkdev/testdevinfo-blkdev.obj: blkdev/blkdev.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/blkdev.c' object='blkdev/testdevinfo-blkdev.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testdevinfo_CPPFLAGS) $(CPPFLAGS) $(testdevinfo_CFLAGS) $(CFLAGS) -c -o blkdev/testdevinfo-blkdev.obj `if test -f 'blkdev/blkdev.c'; then $(CYGPATH_W) 'blkdev/blkdev.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/blkdev.c'; fi`
-
-blkdev/testdevinfo-linux_version.o: blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testdevinfo_CPPFLAGS) $(CPPFLAGS) $(testdevinfo_CFLAGS) $(CFLAGS) -MT blkdev/testdevinfo-linux_version.o -MD -MP -MF blkdev/$(DEPDIR)/testdevinfo-linux_version.Tpo -c -o blkdev/testdevinfo-linux_version.o `test -f 'blkdev/linux_version.c' || echo '$(srcdir)/'`blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/testdevinfo-linux_version.Tpo blkdev/$(DEPDIR)/testdevinfo-linux_version.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/linux_version.c' object='blkdev/testdevinfo-linux_version.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testdevinfo_CPPFLAGS) $(CPPFLAGS) $(testdevinfo_CFLAGS) $(CFLAGS) -c -o blkdev/testdevinfo-linux_version.o `test -f 'blkdev/linux_version.c' || echo '$(srcdir)/'`blkdev/linux_version.c
-
-blkdev/testdevinfo-linux_version.obj: blkdev/linux_version.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testdevinfo_CPPFLAGS) $(CPPFLAGS) $(testdevinfo_CFLAGS) $(CFLAGS) -MT blkdev/testdevinfo-linux_version.obj -MD -MP -MF blkdev/$(DEPDIR)/testdevinfo-linux_version.Tpo -c -o blkdev/testdevinfo-linux_version.obj `if test -f 'blkdev/linux_version.c'; then $(CYGPATH_W) 'blkdev/linux_version.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/linux_version.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blkdev/$(DEPDIR)/testdevinfo-linux_version.Tpo blkdev/$(DEPDIR)/testdevinfo-linux_version.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blkdev/linux_version.c' object='blkdev/testdevinfo-linux_version.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(testdevinfo_CPPFLAGS) $(CPPFLAGS) $(testdevinfo_CFLAGS) $(CFLAGS) -c -o blkdev/testdevinfo-linux_version.obj `if test -f 'blkdev/linux_version.c'; then $(CYGPATH_W) 'blkdev/linux_version.c'; else $(CYGPATH_W) '$(srcdir)/blkdev/linux_version.c'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
