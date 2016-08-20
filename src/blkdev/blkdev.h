@@ -94,9 +94,6 @@ struct hd_geometry {
 #endif                          /* HDIO_GETGEO */
 
 
-/* are we working with block device? */
-int is_blkdev(int fd);
-
 /* Determine size in bytes */
 off_t blkdev_find_size(int fd);
 
