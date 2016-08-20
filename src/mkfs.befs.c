@@ -320,51 +320,6 @@ static void establish_params(struct device_info *info)
     unsigned int cluster_size = 4;      /* starting point for FAT12 and FAT16 */
     int def_root_dir_entries = 512;
 
-    if (info->type != TYPE_FIXED) {
-        /* enter default parameters for floppy disks if the size matches */
-        switch (info->size / 1024) {
-        case 360:
-            sec_per_track = 9;
-            heads = 2;
-            media = 0xfd;
-            cluster_size = 2;
-            def_root_dir_entries = 112;
-            break;
-
-        case 720:
-            sec_per_track = 9;
-            heads = 2;
-            media = 0xf9;
-            cluster_size = 2;
-            def_root_dir_entries = 112;
-            break;
-
-        case 1200:
-            sec_per_track = 15;
-            heads = 2;
-            media = 0xf9;
-            cluster_size = (1);
-            def_root_dir_entries = 224;
-            break;
-
-        case 1440:
-            sec_per_track = 18;
-            heads = 2;
-            media = 0xf0;
-            cluster_size = (1);
-            def_root_dir_entries = 224;
-            break;
-
-        case 2880:
-            sec_per_track = 36;
-            heads = 2;
-            media = 0xf0;
-            cluster_size = 2;
-            def_root_dir_entries = 224;
-            break;
-        }
-    }
-
     if (!size_fat && info->size >= 512 * 1024 * 1024) {
         if (verbose)
             printf("Auto-selecting FAT32 for large filesystem\n");
