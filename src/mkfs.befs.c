@@ -209,7 +209,6 @@ static time_t create_time;      /* Creation time */
 static char volume_name[] = NO_NAME;    /* Volume name */
 static uint64_t blocks;         /* Number of blocks in filesystem */
 static int sector_size = 512;   /* Size of a logical sector */
-static int sector_size_set = 0; /* User selected sector size */
 static int backup_boot = 0;     /* Sector# of backup boot sector */
 static int reserved_sectors = 0;        /* Number of reserved sectors */
 static int nr_fats = 2;         /* Default number of FATs to produce */
@@ -1079,19 +1078,8 @@ int main(int argc, char **argv)
     if (devinfo.has_children > 0)
         die("Partitions or virtual mappings on device '%s', not making filesystem");
 
-    if (devinfo.sector_size > 0) {
-        if (sector_size_set) {
-            if (sector_size < devinfo.sector_size) {
-                sector_size = devinfo.sector_size;
-                fprintf(stderr,
-                        "Warning: sector size was set to %d (minimal for this device)\n",
-                        sector_size);
-            }
-        } else {
-            sector_size = devinfo.sector_size;
-            sector_size_set = 1;
-        }
-    }
+    if (devinfo.sector_size > 0)
+        sector_size = devinfo.sector_size;
 
     if (sector_size > 4096)
         fprintf(stderr,
