@@ -958,7 +958,6 @@ int main(int argc, char **argv)
     int c;
     char *tmp;
     struct device_info devinfo;
-    int i = 0;
     uint64_t cblocks = 0;
     int blocks_specified = 0;
     struct timeval create_timeval;
@@ -990,16 +989,6 @@ int main(int argc, char **argv)
         switch (c) {
         case 'n':              /* n : Volume name */
             sprintf(volume_name, "%-11.11s", optarg);
-            for (i = 0; volume_name[i] && i < 11; i++)
-                /* don't know if here should be more strict
-                 * !uppercase(label[i]) */
-                if (islower(volume_name[i])) {
-                    fprintf(stderr,
-                            "mkfs.fat: warning - lowercase labels might not "
-                            "work properly with DOS or Windows\n");
-                    break;
-                }
-
             break;
 
         case 'v':              /* v : Verbose execution */
