@@ -191,33 +191,6 @@ int blkdev_get_sector_size(int fd, int *sector_size)
 }
 
 /*
- * Get physical block device size. The BLKPBSZGET is supported since Linux
- * 2.6.32. For old kernels is probably the best to assume that physical sector
- * size is the same as logical sector size.
- *
- * Example:
- *
- * rc = blkdev_get_physector_size(fd, &physec);
- * if (rc || physec == 0) {
- *	rc = blkdev_get_sector_size(fd, &physec);
- *	if (rc)
- *		physec = DEFAULT_SECTOR_SIZE;
- * }
- */
-int blkdev_get_physector_size(int fd, int *sector_size)
-{
-#ifdef BLKPBSZGET
-    if (ioctl(fd, BLKPBSZGET, &sector_size) >= 0)
-        return 0;
-    return -1;
-#else
-    (void) fd;                  /* prevent unused parameter warning */
-    *sector_size = DEFAULT_SECTOR_SIZE;
-    return 0;
-#endif
-}
-
-/*
  * Return the alignment status of a device
  */
 int blkdev_is_misaligned(int fd)

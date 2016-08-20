@@ -106,9 +106,6 @@ int blkdev_get_sector_size(int fd, int *sector_size);
 /* specifies whether or not the device is misaligned */
 int blkdev_is_misaligned(int fd);
 
-/* get physical block device size */
-int blkdev_get_physector_size(int fd, int *sector_size);
-
 /* is the device cdrom capable? */
 int blkdev_is_cdrom(int fd);
 
