@@ -68,11 +68,6 @@
 #define FITHAW     _IOWR('X', 120, int) /* Thaw */
 #endif
 
-/* uniform CD-ROM information */
-#ifndef CDROM_GET_CAPABILITY
-#define CDROM_GET_CAPABILITY 0x5331
-#endif
-
 #endif                          /* __linux */
 
 
@@ -105,9 +100,6 @@ int blkdev_get_sector_size(int fd, int *sector_size);
 
 /* specifies whether or not the device is misaligned */
 int blkdev_is_misaligned(int fd);
-
-/* is the device cdrom capable? */
-int blkdev_is_cdrom(int fd);
 
 /* get device's geometry - legacy */
 int blkdev_get_geometry(int fd, unsigned int *h, unsigned int *s);
