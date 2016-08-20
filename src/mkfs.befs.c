@@ -246,7 +246,8 @@ static void write_tables(void);
 
 /* The function implementations */
 
-/* Handle the reporting of fatal errors.  Volatile to let gcc know that this doesn't return */
+/* Handle the reporting of fatal errors.
+ * Volatile to let gcc know that this doesn't return */
 
 static void fatal_error(const char *fmt_string)
 {
@@ -870,7 +871,7 @@ static void setup_tables(void)
     memset(blank_sector, 0, sector_size);
 }
 
-/* Write the new filesystem's data tables to wherever they're going to end up! */
+/* Write the new filesystem's data tables to wherever they're going to end up */
 
 #define error(str)				\
   do {						\
@@ -937,8 +938,8 @@ static void write_tables(void)
         free(blank_sector);
     if (info_sector)
         free(info_sector);
-    free(root_dir);             /* Free up the root directory space from setup_tables */
-    free(fat);                  /* Free up the fat table space reserved during setup_tables */
+    free(root_dir);             /* Free up the root directory space */
+    free(fat);                  /* Free up the fat table space reserved */
 }
 
 /* Report the command usage and exit with the given error code */
@@ -976,9 +977,11 @@ int main(int argc, char **argv)
             program_name = p + 1;
     }
 
+    /* Default volume ID = creation time, fudged for more uniqueness */
     gettimeofday(&create_timeval, NULL);
     create_time = create_timeval.tv_sec;
-    volume_id = (uint32_t) ((create_timeval.tv_sec << 20) | create_timeval.tv_usec);    /* Default volume ID = creation time, fudged for more uniqueness */
+    volume_id = (uint32_t) ((create_timeval.tv_sec << 20) |
+                            create_timeval.tv_usec);
 
     printf("mkfs.befs " VERSION " (" VERSION_DATE ")\n");
 
@@ -988,10 +991,12 @@ int main(int argc, char **argv)
         case 'n':              /* n : Volume name */
             sprintf(volume_name, "%-11.11s", optarg);
             for (i = 0; volume_name[i] && i < 11; i++)
-                /* don't know if here should be more strict !uppercase(label[i]) */
+                /* don't know if here should be more strict
+                 * !uppercase(label[i]) */
                 if (islower(volume_name[i])) {
                     fprintf(stderr,
-                            "mkfs.fat: warning - lowercase labels might not work properly with DOS or Windows\n");
+                            "mkfs.fat: warning - lowercase labels might not "
+                            "work properly with DOS or Windows\n");
                     break;
                 }
 
@@ -1042,7 +1047,8 @@ int main(int argc, char **argv)
     }
 
     check_mount(device_name);       /* Is the device already mounted? */
-    dev = open(device_name, O_EXCL | O_RDWR);       /* Is it a suitable device to build the FS on? */
+    /* Is it a suitable device to build the FS on? */
+    dev = open(device_name, O_EXCL | O_RDWR);
     if (dev < 0) {
       fprintf(stderr, "%s: unable to open %s: %s\n", program_name,
               device_name, strerror(errno));
@@ -1074,17 +1080,20 @@ int main(int argc, char **argv)
 
     if (devinfo.type == TYPE_FIXED &&
         devinfo.partition == 0)
-        die("Device partition expected, not making filesystem on entire device '%s'");
+        die("Device partition expected,"
+            " not making filesystem on entire device '%s'");
 
     if (devinfo.has_children > 0)
-        die("Partitions or virtual mappings on device '%s', not making filesystem");
+        die("Partitions or virtual mappings on device '%s',"
+            " not making filesystem");
 
     if (devinfo.sector_size > 0)
         sector_size = devinfo.sector_size;
 
     if (sector_size > 4096)
         fprintf(stderr,
-                "Warning: sector size %d > 4096 is non-standard, filesystem may not be usable\n",
+                "Warning: sector size %d > 4096 is non-standard,"
+                " filesystem may not be usable\n",
                 sector_size);
 
     establish_params(&devinfo);
