@@ -238,7 +238,6 @@ static int invariant = 0;       /* Whether to set normally randomized or
 
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void mark_FAT_cluster(int cluster, unsigned int value);
-static void check_mount(char *device_name);
 static void establish_params(struct device_info *info);
 static void setup_tables(void);
 static void write_tables(void);
@@ -270,14 +269,6 @@ static void mark_FAT_cluster(int cluster, unsigned int value)
         (unsigned char) ((value & 0x00ff0000) >> 16);
     fat[(4 * cluster) + 3] =
         (unsigned char) ((value & 0xff000000) >> 24);
-}
-
-/* Check to see if the specified device is currently mounted - abort if it is */
-
-static void check_mount(char *device_name)
-{
-    if (is_device_mounted(device_name))
-        die("%s contains a mounted filesystem.");
 }
 
 /* Establish the geometry and media parameters for the device */
@@ -852,7 +843,10 @@ int main(int argc, char **argv)
         usage(1);
     }
 
-    check_mount(device_name);       /* Is the device already mounted? */
+    /* Is the device already mounted? */
+    if (is_device_mounted(device_name))
+        die("%s contains a mounted filesystem.");
+
     /* Is it a suitable device to build the FS on? */
     dev = open(device_name, O_EXCL | O_RDWR);
     if (dev < 0) {
