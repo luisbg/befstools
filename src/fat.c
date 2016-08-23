@@ -49,7 +49,6 @@ void get_fat(FAT_ENTRY * entry, void *fat, uint32_t cluster, DOS_FS * fs)
         die("Internal error: cluster out of range in get_fat() (%lu > %lu).", (unsigned long) cluster, (unsigned long) (fs->data_clusters + 1));
     }
 
-    printf("lbg: here\n");
     /* According to M$, the high 4 bits of a FAT32 entry are reserved and
      * are not part of the cluster number. So we cut them off. */
     e = le32toh(((unsigned int *) fat)[cluster]);

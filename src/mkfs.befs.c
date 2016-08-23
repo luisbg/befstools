@@ -86,8 +86,6 @@ static inline int cdiv(int a, int b)
 #define FAT_BAD      0x0ffffff7
 
 #define MSDOS_EXT_SIGN 0x29     /* extended boot sector signature */
-#define MSDOS_FAT12_SIGN "FAT12   "     /* FAT12 filesystem signature */
-#define MSDOS_FAT16_SIGN "FAT16   "     /* FAT16 filesystem signature */
 #define MSDOS_FAT32_SIGN "FAT32   "     /* FAT32 filesystem signature */
 
 #define BOOT_SIGN 0xAA55        /* Boot sector magic number */
@@ -331,15 +329,14 @@ static unsigned int align_object(unsigned int sectors,
 
 static void setup_tables(void)
 {
-    unsigned fatdata1216;       /* Sectors for FATs + data area (FAT12/16) */
     unsigned fatdata32;         /* Sectors for FATs + data area (FAT32) */
-    unsigned fatlength12, fatlength16, fatlength32;
-    unsigned maxclust12, maxclust16, maxclust32;
-    unsigned clust12, clust16, clust32;
+    unsigned fatlength32;
+    unsigned maxclust32;
+    unsigned clust32;
     int maxclustsize;
     unsigned root_dir_sectors = cdiv(root_dir_entries * 32, sector_size);
 
-    unsigned cluster_count = 0, fat_length;
+    unsigned cluster_count = 0;
     struct tm *ctime;
     struct msdos_volume_info *vi = &bs.fat32.vi;
 
@@ -420,64 +417,9 @@ static void setup_tables(void)
     do {
         fatdata32 = num_sectors
             - align_object(reserved_sectors, bs.cluster_size);
-        fatdata1216 = fatdata32
-            - align_object(root_dir_sectors, bs.cluster_size);
 
         if (verbose >= 2)
             printf("Trying with %d sectors/cluster:\n", bs.cluster_size);
-
-        /* The factor 2 below avoids cut-off errors for nr_fats == 1.
-         * The "nr_fats*3" is for the reserved first two FAT entries */
-        clust12 =
-            2 * ((long long) fatdata1216 * sector_size +
-                 nr_fats * 3) / (2 * (int) bs.cluster_size * sector_size +
-                                 nr_fats * 3);
-        fatlength12 = cdiv(((clust12 + 2) * 3 + 1) >> 1, sector_size);
-        fatlength12 = align_object(fatlength12, bs.cluster_size);
-        /* Need to recalculate number of clusters, since the unused parts of the
-         * FATS and data area together could make up space for an additional,
-         * not really present cluster. */
-        clust12 = (fatdata1216 - nr_fats * fatlength12) / bs.cluster_size;
-        maxclust12 = (fatlength12 * 2 * sector_size) / 3;
-        if (maxclust12 > MAX_CLUST_12)
-            maxclust12 = MAX_CLUST_12;
-        if (verbose >= 2)
-            printf("FAT12: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
-                   clust12, fatlength12, maxclust12, MAX_CLUST_12);
-        if (clust12 > maxclust12 - 2) {
-            clust12 = 0;
-            if (verbose >= 2)
-                printf("FAT12: too much clusters\n");
-        }
-
-        clust16 = ((long long) fatdata1216 * sector_size + nr_fats * 4) /
-            ((int) bs.cluster_size * sector_size + nr_fats * 2);
-        fatlength16 = cdiv((clust16 + 2) * 2, sector_size);
-        fatlength16 = align_object(fatlength16, bs.cluster_size);
-        /* Need to recalculate number of clusters, since the unused parts of the
-         * FATS and data area together could make up space for an additional,
-         * not really present cluster. */
-        clust16 = (fatdata1216 - nr_fats * fatlength16) / bs.cluster_size;
-        maxclust16 = (fatlength16 * sector_size) / 2;
-        if (maxclust16 > MAX_CLUST_16)
-            maxclust16 = MAX_CLUST_16;
-        if (verbose >= 2)
-            printf("FAT16: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
-                   clust16, fatlength16, maxclust16, MAX_CLUST_16);
-        if (clust16 > maxclust16 - 2) {
-            if (verbose >= 2)
-                printf("FAT16: too much clusters\n");
-            clust16 = 0;
-        }
-        /* The < 4078 avoids that the filesystem will be misdetected as having a
-         * 12 bit FAT. */
-        if (clust16 < FAT12_THRESHOLD) {
-            if (verbose >= 2)
-                printf(clust16 < FAT12_THRESHOLD ?
-                       "FAT16: would be misdetected as FAT12\n" :
-                       "FAT16: too much clusters\n");
-            clust16 = 0;
-        }
 
         clust32 = ((long long) fatdata32 * sector_size + nr_fats * 8) /
             ((int) bs.cluster_size * sector_size + nr_fats * 4);
@@ -504,7 +446,7 @@ static void setup_tables(void)
                 printf("FAT32: too much clusters\n");
         }
 
-        if (clust32 && size_fat == 32)
+        if (clust32)
             break;
 
         bs.cluster_size <<= 1;
@@ -514,7 +456,6 @@ static void setup_tables(void)
         fprintf(stderr,
                 "WARNING: Not enough clusters for a 32 bit FAT!\n");
     cluster_count = clust32;
-    fat_length = fatlength32;
     bs.fat_length = htole16(0);
     bs.fat32.fat32_length = htole32(fatlength32);
     memcpy(vi->fs_type, MSDOS_FAT32_SIGN, 8);
@@ -575,7 +516,7 @@ static void setup_tables(void)
     fat_entries = cluster_count + 2;
 
     /* The two following vars are in hard sectors, i.e. 512 byte sectors! */
-    start_data_sector = (reserved_sectors + nr_fats * fat_length +
+    start_data_sector = (reserved_sectors + nr_fats * fatlength32 +
                          cdiv(root_dir_entries * 32, sector_size)) *
         (sector_size / HARD_SECTOR_SIZE);
     start_data_block = (start_data_sector + SECTORS_PER_BLOCK - 1) /
@@ -599,7 +540,7 @@ static void setup_tables(void)
              (int) (bs.fats), size_fat, (bs.fats != 1) ? "s" : "",
              (int) (bs.cluster_size), (bs.cluster_size != 1) ? "s" : "");
         printf("FAT size is %d sector%s, and provides %d cluster%s.\n",
-               fat_length, (fat_length != 1) ? "s" : "", cluster_count,
+               fatlength32, (fatlength32 != 1) ? "s" : "", cluster_count,
                (cluster_count != 1) ? "s" : "");
         printf("There %s %u reserved sector%s.\n",
                (reserved_sectors != 1) ? "are" : "is", reserved_sectors,
@@ -615,7 +556,7 @@ static void setup_tables(void)
     /* Make the file allocation tables! */
 
     if (malloc_entire_fat)
-        alloced_fat_length = fat_length;
+        alloced_fat_length = fatlength32;
     else
         alloced_fat_length = 1;
 
@@ -754,7 +695,7 @@ static void write_tables(void)
             writebuf(blank_sector, sector_size, "FAT");
     }
     /* Write the root directory directly after the last FAT. This is the root
-     * dir area on FAT12/16, and the first cluster on FAT32. */
+     * dir area and the first cluster on FAT32. */
     writebuf((char *) root_dir, size_root_dir, "root directory");
 
     if (blank_sector)
