@@ -67,13 +67,14 @@ void fs_open(char *path, int rw)
 }
 
 /**
+ * fs_read - read data
+ * @pos: byte offset, relative to the beginning of the partition, at which to
+ *       read
+ * @size: number of bytes to read
+ * @data: where to put the data read
+ *
  * Read data from the partition, accounting for any pending updates that are
  * queued for writing.
- *
- * @param[in]   pos     Byte offset, relative to the beginning of the partition,
- *                      at which to read
- * @param[in]   size    Number of bytes to read
- * @param[out]  data    Where to put the data read
  */
 void fs_read(off_t pos, int size, void *data)
 {

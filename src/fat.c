@@ -35,12 +35,11 @@
 #include "fat.h"
 
 /**
- * Fetch the FAT entry for a specified cluster.
- *
- * @param[out]  entry	    Cluster to which cluster of interest is linked
- * @param[in]	fat	    FAT table for the partition
- * @param[in]	cluster     Cluster of interest
- * @param[in]	fs          Information from the FAT boot sectors (bits per FAT entry)
+ * get_fat - fetch the FAT entry for a specified cluster.
+ * @entry - cluster to which cluster of interest is linked
+ * @fat - FAT table for the partition
+ * @cluster - cluster of interest
+ * @fs - information from the FAT boot sectors (bits per FAT entry)
  */
 void get_fat(FAT_ENTRY * entry, void *fat, uint32_t cluster, DOS_FS * fs)
 {
@@ -74,12 +73,13 @@ void get_fat(FAT_ENTRY * entry, void *fat, uint32_t cluster, DOS_FS * fs)
 }
 
 /**
- * Build a bookkeeping structure from the partition's FAT table.
- * If the partition has multiple FATs and they don't agree, try to pick a winner,
- * and queue a command to overwrite the loser.
- * One error that is fixed here is a cluster that links to something out of range.
+ * read_fat - build a bookkeeping structure from the partition's FAT table
+ * @fs - information about the filesystem
  *
- * @param[inout]    fs      Information about the filesystem
+ * If the partition has multiple FATs and they don't agree, try to pick a
+ * winner, and queue a command to overwrite the loser.
+ * One error that is fixed here is a cluster that links to something out of
+ * range.
  */
 void read_fat(DOS_FS * fs)
 {
@@ -161,14 +161,14 @@ void read_fat(DOS_FS * fs)
 }
 
 /**
- * Get the cluster to which the specified cluster is linked.
+ * next_cluster - get the cluster to which the specified cluster is linked
+ * @fs - information about the filesystem
+ * @cluster - cluster to follow
+ *
  * If the linked cluster is marked bad, abort.
  *
- * @param[in]   fs          Information about the filesystem
- * @param[in]	cluster     Cluster to follow
- *
- * @return  -1              'cluster' is at the end of the chain
- * @return  Other values    Next cluster in this chain
+ * Return -1 if 'cluster' is at the end of the chain, or
+ * return other values when next cluster in this chain
  */
 uint32_t next_cluster(DOS_FS * fs, uint32_t cluster)
 {
