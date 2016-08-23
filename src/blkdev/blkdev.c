@@ -18,10 +18,6 @@
 #include <linux/fd.h>
 #endif
 
-#ifdef HAVE_SYS_DISKLABEL_H
-#include <sys/disklabel.h>
-#endif
-
 #ifdef HAVE_SYS_DISK_H
 #ifdef HAVE_SYS_QUEUE_H
 #include <sys/queue.h>          /* for LIST_HEAD */
@@ -100,12 +96,6 @@ int blkdev_get_size(int fd, unsigned long long *bytes)
 
 #endif                          /* BLKGETSIZE */
 
-#ifdef DIOCGMEDIASIZE
-    /* FreeBSD */
-    if (ioctl(fd, DIOCGMEDIASIZE, bytes) >= 0)
-        return 0;
-#endif
-
 #ifdef FDGETPRM
     {
         struct floppy_struct this_floppy;
@@ -116,36 +106,6 @@ int blkdev_get_size(int fd, unsigned long long *bytes)
         }
     }
 #endif                          /* FDGETPRM */
-
-#ifdef HAVE_SYS_DISKLABEL_H
-    {
-        /*
-         * This code works for FreeBSD 4.11 i386, except for the full device
-         * (such as /dev/ad0). It doesn't work properly for newer FreeBSD
-         * though. FreeBSD >= 5.0 should be covered by the DIOCGMEDIASIZE
-         * above however.
-         *
-         * Note that FreeBSD >= 4.0 has disk devices as unbuffered (raw,
-         * character) devices, so we need to check for S_ISCHR, too.
-         */
-        int part = -1;
-        struct disklabel lab;
-        struct partition *pp;
-        struct stat st;
-
-        if ((fstat(fd, &st) >= 0) &&
-            (S_ISBLK(st.st_mode) || S_ISCHR(st.st_mode)))
-            part = st.st_rdev & 7;
-
-        if (part >= 0 && (ioctl(fd, DIOCGDINFO, (char *) &lab) >= 0)) {
-            pp = &lab.d_partitions[part];
-            if (pp->p_size) {
-                *bytes = pp->p_size << 9;
-                return 0;
-            }
-        }
-    }
-#endif                          /* HAVE_SYS_DISKLABEL_H */
 
     {
         struct stat st;
