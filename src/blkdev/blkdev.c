@@ -18,13 +18,6 @@
 #include <linux/fd.h>
 #endif
 
-#ifdef HAVE_SYS_DISK_H
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>          /* for LIST_HEAD */
-#endif
-#include <sys/disk.h>
-#endif
-
 #include "blkdev.h"
 
 static long blkdev_valid_offset(int fd, off_t offset)
