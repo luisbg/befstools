@@ -69,14 +69,6 @@ off_t blkdev_find_size(int fd)
 /* get size in bytes */
 int blkdev_get_size(int fd, unsigned long long *bytes)
 {
-#ifdef DKIOCGETBLOCKCOUNT
-    /* Apple Darwin */
-    if (ioctl(fd, DKIOCGETBLOCKCOUNT, bytes) >= 0) {
-        *bytes <<= 9;
-        return 0;
-    }
-#endif
-
 #ifdef BLKGETSIZE64
     {
       if (ioctl(fd, BLKGETSIZE64, bytes) >= 0)
