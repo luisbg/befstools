@@ -297,27 +297,15 @@ static char print_fat_dirty_state(void)
     return '1';
 }
 
-static void check_fat_state_bit(DOS_FS * fs, void *b)
+static void check_fat_state_bit(void *b)
 {
-    if (fs->fat_bits == 32) {
-        struct boot_sector *b32 = b;
+    struct boot_sector *b32 = b;
 
-        if (b32->reserved3 & FAT_STATE_DIRTY) {
-            printf("0x41: ");
-            if (print_fat_dirty_state() == '1') {
-                b32->reserved3 &= ~FAT_STATE_DIRTY;
-                fs_write(0, sizeof(*b32), b32);
-            }
-        }
-    } else {
-        struct boot_sector_16 *b16 = b;
-
-        if (b16->reserved2 & FAT_STATE_DIRTY) {
-            printf("0x25: ");
-            if (print_fat_dirty_state() == '1') {
-                b16->reserved2 &= ~FAT_STATE_DIRTY;
-                fs_write(0, sizeof(*b16), b16);
-            }
+    if (b32->reserved3 & FAT_STATE_DIRTY) {
+        printf("0x41: ");
+        if (print_fat_dirty_state() == '1') {
+            b32->reserved3 &= ~FAT_STATE_DIRTY;
+            fs_write(0, sizeof(*b32), b32);
         }
     }
 }
@@ -360,7 +348,7 @@ void read_boot(DOS_FS * fs)
 
     fat_length = le16toh(b.fat_length) ?
         le16toh(b.fat_length) : le32toh(b.fat32_length);
-    if (!fat_length)
+    if (!fat_length || !b.fat32_length)
         die("FAT size is zero.");
 
     fs->fat_start = (off_t) le16toh(b.reserved) * logical_sector_size;
@@ -380,7 +368,7 @@ void read_boot(DOS_FS * fs)
     fs->root_cluster = 0;       /* indicates standard, pre-FAT32 root dir */
     fs->fsinfo_start = 0;       /* no FSINFO structure */
     fs->free_clusters = -1;     /* unknown */
-    if (!b.fat_length && b.fat32_length) {
+    if (!b.fat_length) {
         fs->fat_bits = 32;
         fs->root_cluster = le32toh(b.root_cluster);
         if (!fs->root_cluster && fs->root_entries)
@@ -405,20 +393,12 @@ void read_boot(DOS_FS * fs)
                    "  This may lead to problems on some systems.\n",
                    (unsigned long) fs->data_clusters, FAT16_THRESHOLD);
 
-        check_fat_state_bit(fs, &b);
+        check_fat_state_bit(&b);
         fs->backupboot_start =
             le16toh(b.backup_boot) * logical_sector_size;
         check_backup_boot(fs, &b, logical_sector_size);
 
         read_fsinfo(fs, &b, logical_sector_size);
-    } else {
-        /* On real MS-DOS, a 16 bit FAT is used whenever there would be too
-         * much clusers otherwise. */
-        fs->fat_bits = (fs->data_clusters >= FAT12_THRESHOLD) ? 16 : 12;
-        if (fs->data_clusters >= FAT16_THRESHOLD)
-            die("Too many clusters (%lu) for FAT16 filesystem.",
-                fs->data_clusters);
-        check_fat_state_bit(fs, &b);
     }
 
     /* On FAT32, the high 4 bits of a FAT entry are reserved */
@@ -426,13 +406,7 @@ void read_boot(DOS_FS * fs)
     fs->fat_size = fat_length * logical_sector_size;
 
     fs->label = calloc(12, sizeof(uint8_t));
-    if (fs->fat_bits == 12 || fs->fat_bits == 16) {
-        struct boot_sector_16 *b16 = (struct boot_sector_16 *) &b;
-        if (b16->extended_sig == 0x29)
-            memmove(fs->label, b16->label, 11);
-        else
-            fs->label = NULL;
-    } else if (fs->fat_bits == 32) {
+    if (fs->fat_bits == 32) {
         if (b.extended_sig == 0x29)
             memmove(fs->label, &b.label, 11);
         else
@@ -455,32 +429,18 @@ void read_boot(DOS_FS * fs)
 
 static void write_boot_label(DOS_FS * fs, char *label)
 {
-    if (fs->fat_bits == 12 || fs->fat_bits == 16) {
-        struct boot_sector_16 b16;
+    struct boot_sector b;
 
-        fs_read(0, sizeof(b16), &b16);
-        if (b16.extended_sig != 0x29) {
-            b16.extended_sig = 0x29;
-            b16.serial = 0;
-            memmove(b16.fs_type,
-                    fs->fat_bits == 12 ? "FAT12   " : "FAT16   ", 8);
-        }
-        memmove(b16.label, label, 11);
-        fs_write(0, sizeof(b16), &b16);
-    } else if (fs->fat_bits == 32) {
-        struct boot_sector b;
-
-        fs_read(0, sizeof(b), &b);
-        if (b.extended_sig != 0x29) {
-            b.extended_sig = 0x29;
-            b.serial = 0;
-            memmove(b.fs_type, "FAT32   ", 8);
-        }
-        memmove(b.label, label, 11);
-        fs_write(0, sizeof(b), &b);
-        if (fs->backupboot_start)
-            fs_write(fs->backupboot_start, sizeof(b), &b);
+    fs_read(0, sizeof(b), &b);
+    if (b.extended_sig != 0x29) {
+        b.extended_sig = 0x29;
+        b.serial = 0;
+        memmove(b.fs_type, "FAT32   ", 8);
     }
+    memmove(b.label, label, 11);
+    fs_write(0, sizeof(b), &b);
+    if (fs->backupboot_start)
+        fs_write(fs->backupboot_start, sizeof(b), &b);
 }
 
 off_t find_volume_de(DOS_FS * fs, DIR_ENT * de)
