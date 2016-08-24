@@ -204,16 +204,12 @@ static int dev = -1;            /* FS block device file handle */
 static struct msdos_boot_sector bs;     /* Boot sector data */
 static int start_data_sector;   /* Sector number for the start of the data area */
 static int start_data_block;    /* Block number for the start of the data area */
-static unsigned char *fat;      /* File allocation table */
-static unsigned alloced_fat_length;     /* # of FAT sectors we can keep in memory */
-static unsigned fat_entries;    /* total entries in FAT table (including reserved) */
 static struct msdos_dir_entry *root_dir;        /* Root directory */
 static int size_root_dir;       /* Size of the root directory in bytes */
 static uint32_t num_sectors;    /* Total number of sectors in device */
 static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
-static int malloc_entire_fat = FALSE;   /* Whether we should malloc() the entire FAT or not */
 static int align_structures = TRUE;     /* Whether to enforce alignment */
 static int orphaned_sectors = 0;        /* Sectors that exist in the last block of filesystem */
 static int invariant = 0;       /* Whether to set normally randomized or
@@ -223,7 +219,6 @@ static int invariant = 0;       /* Whether to set normally randomized or
 /* Function prototype definitions */
 
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
-static void mark_FAT_cluster(int cluster, unsigned int value);
 static void establish_params(struct device_info *info);
 static void setup_tables(void);
 static void write_tables(void);
@@ -237,24 +232,6 @@ static void fatal_error(const char *fmt_string)
 {
     fprintf(stderr, fmt_string, program_name, device_name);
     exit(1);                    /* The error exit code is 1! */
-}
-
-/* Mark the specified cluster as having a particular value */
-
-static void mark_FAT_cluster(int cluster, unsigned int value)
-{
-
-    if (cluster < 0 || cluster >= fat_entries)
-        die("Internal error: out of range cluster number in mark_FAT_cluster");
-
-    value &= 0xfffffff;
-    fat[4 * cluster] = (unsigned char) (value & 0x000000ff);
-    fat[(4 * cluster) + 1] =
-        (unsigned char) ((value & 0x0000ff00) >> 8);
-    fat[(4 * cluster) + 2] =
-        (unsigned char) ((value & 0x00ff0000) >> 16);
-    fat[(4 * cluster) + 3] =
-        (unsigned char) ((value & 0xff000000) >> 24);
 }
 
 /* Establish the geometry and media parameters for the device */
@@ -489,7 +466,6 @@ static void setup_tables(void)
     if (!cluster_count) {
         die("Attempting to create a too large filesystem");
     }
-    fat_entries = cluster_count + 2;
 
     /* The two following vars are in hard sectors, i.e. 512 byte sectors! */
     start_data_sector = (reserved_sectors + nr_fats * fatlength32 +
@@ -529,33 +505,9 @@ static void setup_tables(void)
             printf("no volume label.\n");
     }
 
-    /* Make the file allocation tables! */
-
-    if (malloc_entire_fat)
-        alloced_fat_length = fatlength32;
-    else
-        alloced_fat_length = 1;
-
-    if ((fat =
-         (unsigned char *) malloc(alloced_fat_length * sector_size)) ==
-        NULL)
-        die("unable to allocate space for FAT image in memory");
-
-    memset(fat, 0, alloced_fat_length * sector_size);
-
-    mark_FAT_cluster(0, 0xffffffff);    /* Initial fat entries */
-    mark_FAT_cluster(1, 0xffffffff);
-    fat[0] = (unsigned char) bs.media;  /* Put media type in first byte! */
-
-    /* Mark cluster 2 as EOF (used for root dir) */
-    mark_FAT_cluster(2, FAT_EOF);
-
-    /* Make the root directory entries */
-
     size_root_dir = bs.cluster_size * sector_size;
     if ((root_dir =
          (struct msdos_dir_entry *) malloc(size_root_dir)) == NULL) {
-        free(fat);              /* Tidy up before we die! */
         die("unable to allocate space for root directory in memory");
     }
 
@@ -593,7 +545,6 @@ static void setup_tables(void)
 
 #define error(str)				\
   do {						\
-    free (fat);					\
     free (root_dir);				\
     die (str);					\
   } while(0)
@@ -615,9 +566,6 @@ static void setup_tables(void)
 static void write_tables(void)
 {
     int x;
-    int fat_length;
-
-    fat_length = le32toh(bs.fat32.fat32_length);
 
     seekto(0, "start of device");
     /* clear all reserved sectors */
@@ -628,23 +576,8 @@ static void write_tables(void)
     writebuf((char *) &bs, sizeof(struct msdos_boot_sector),
              "boot sector");
 
-    /* seek to start of FATS and write them all */
+    /* seek to start of superblock and write them all */
     seekto(reserved_sectors * sector_size, "first FAT");
-    for (x = 1; x <= nr_fats; x++) {
-        int y;
-        int blank_fat_length = fat_length - alloced_fat_length;
-        writebuf(fat, alloced_fat_length * sector_size, "FAT");
-        for (y = 0; y < blank_fat_length; y++)
-            writebuf(blank_sector, sector_size, "FAT");
-    }
-    /* Write the root directory directly after the last FAT. This is the root
-     * dir area and the first cluster on FAT32. */
-    writebuf((char *) root_dir, size_root_dir, "root directory");
-
-    if (blank_sector)
-        free(blank_sector);
-    free(root_dir);             /* Free up the root directory space */
-    free(fat);                  /* Free up the fat table space reserved */
 }
 
 /* Report the command usage and exit with the given error code */
