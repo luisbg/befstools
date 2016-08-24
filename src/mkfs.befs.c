@@ -471,18 +471,6 @@ static void setup_tables(void)
     bs.fat32.version[1] = 0;
     bs.fat32.root_cluster = htole32(2);
     bs.fat32.info_sector = htole16(1);
-    if (!backup_boot)
-        backup_boot = (reserved_sectors >= 7) ? 6 :
-            (reserved_sectors >= 2) ? reserved_sectors - 1 : 0;
-    else {
-        if (backup_boot == 1)
-            die("Backup boot sector must be after sector 1");
-        else if (backup_boot >= reserved_sectors)
-            die("Backup boot sector must be a reserved sector");
-    }
-    if (verbose >= 2)
-        printf("Using sector %d as backup boot sector (0 = none)\n",
-               backup_boot);
     bs.fat32.backup_boot = htole16(backup_boot);
     memset(&bs.fat32.reserved2, 0, sizeof(bs.fat32.reserved2));
 
@@ -639,14 +627,6 @@ static void write_tables(void)
     seekto(0, "boot sector");
     writebuf((char *) &bs, sizeof(struct msdos_boot_sector),
              "boot sector");
-    /* on FAT32, write the info sector and backup boot sector */
-    seekto(le16toh(bs.fat32.info_sector) * sector_size, "info sector");
-    writebuf(info_sector, 512, "info sector");
-    if (backup_boot != 0) {
-        seekto(backup_boot * sector_size, "backup boot sector");
-        writebuf((char *) &bs, sizeof(struct msdos_boot_sector),
-                 "backup boot sector");
-    }
 
     /* seek to start of FATS and write them all */
     seekto(reserved_sectors * sector_size, "first FAT");
