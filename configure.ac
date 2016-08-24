@@ -17,8 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-AC_INIT([befstools], [0.0])
-AC_SUBST([RELEASE_DATE], [2016-08-16])
+AC_INIT([befstools], [0.1])
+AC_SUBST([RELEASE_DATE], [2016-08-24])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 AC_ARG_ENABLE([compat-symlinks],
