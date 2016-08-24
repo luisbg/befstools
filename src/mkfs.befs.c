@@ -97,12 +97,6 @@ static inline int cdiv(int a, int b)
  * to the cluster number. So the max. cluster# is based on 2^28 */
 #define MAX_CLUST_32	((1 << 28) - 16)
 
-#define FAT12_THRESHOLD	4085
-
-#define OLDGEMDOS_MAX_SECTORS	32765
-#define GEMDOS_MAX_SECTORS	65531
-#define GEMDOS_MAX_SECTOR_SIZE	(16*1024)
-
 #define BOOTCODE_SIZE		448
 #define BOOTCODE_FAT32_SIZE	420
 
@@ -136,10 +130,6 @@ struct msdos_boot_sector {
     uint32_t total_sect;        /* number of sectors (if sectors == 0) */
     union {
         struct {
-            struct msdos_volume_info vi;
-            uint8_t boot_code[BOOTCODE_SIZE];
-        } __attribute__ ((packed)) _oldfat;
-        struct {
             uint32_t fat32_length;      /* sectors/FAT */
             uint16_t flags;     /* bit 8: fat mirroring, low 4: active fat */
             uint8_t version[2]; /* major, minor filesystem version */
@@ -154,7 +144,6 @@ struct msdos_boot_sector {
     uint16_t boot_sign;
 } __attribute__ ((packed));
 #define fat32	fstype._fat32
-#define oldfat	fstype._oldfat
 
 struct fat32_fsinfo {
     uint32_t reserved1;         /* Nothing as far as I can tell */
