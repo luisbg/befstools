@@ -128,22 +128,19 @@ struct msdos_boot_sector {
     uint16_t heads;             /* number of heads */
     uint32_t hidden;            /* hidden sectors (unused) */
     uint32_t total_sect;        /* number of sectors (if sectors == 0) */
-    union {
-        struct {
-            uint32_t fat32_length;      /* sectors/FAT */
-            uint16_t flags;     /* bit 8: fat mirroring, low 4: active fat */
-            uint8_t version[2]; /* major, minor filesystem version */
-            uint32_t root_cluster;      /* first cluster in root directory */
-            uint16_t info_sector;       /* filesystem info sector */
-            uint16_t backup_boot;       /* backup boot sector */
-            uint16_t reserved2[6];      /* Unused */
-            struct msdos_volume_info vi;
-            uint8_t boot_code[BOOTCODE_FAT32_SIZE];
-        } __attribute__ ((packed)) _fat32;
+    struct {
+        uint32_t fat32_length;  /* sectors/FAT */
+        uint16_t flags;         /* bit 8: fat mirroring, low 4: active fat */
+        uint8_t version[2];     /* major, minor filesystem version */
+        uint32_t root_cluster;  /* first cluster in root directory */
+        uint16_t info_sector;   /* filesystem info sector */
+        uint16_t backup_boot;   /* backup boot sector */
+        uint16_t reserved2[6];  /* Unused */
+        struct msdos_volume_info vi;
+        uint8_t boot_code[BOOTCODE_FAT32_SIZE];
     } __attribute__ ((packed)) fstype;
     uint16_t boot_sign;
 } __attribute__ ((packed));
-#define fat32	fstype._fat32
 
 struct fat32_fsinfo {
     uint32_t reserved1;         /* Nothing as far as I can tell */
@@ -303,7 +300,7 @@ static void setup_tables(void)
 
     unsigned cluster_count = 0;
     struct tm *ctime;
-    struct msdos_volume_info *vi = &bs.fat32.vi;
+    struct msdos_volume_info *vi = &bs.fstype.vi;
 
     memcpy((char *) bs.system_id, "mkfsbefs", strlen("mkfsbefs"));
 
@@ -325,16 +322,16 @@ static void setup_tables(void)
     memcpy(bs.boot_jump, dummy_boot_jump, 3);
 
     /* Patch in the correct offset to the boot code */
-    bs.boot_jump[1] = ((char *) &bs.fat32.boot_code - (char *) &bs) - 2;
+    bs.boot_jump[1] = ((char *) &bs.fstype.boot_code - (char *) &bs) - 2;
 
-   int offset = (char *) &bs.fat32.boot_code -
+    int offset = (char *) &bs.fstype.boot_code -
         (char *) &bs + MESSAGE_OFFSET + 0x7c00;
     if (dummy_boot_code[BOOTCODE_FAT32_SIZE - 1])
         printf("Warning: message too long; truncated\n");
     dummy_boot_code[BOOTCODE_FAT32_SIZE - 1] = 0;
-    memcpy(bs.fat32.boot_code, dummy_boot_code, BOOTCODE_FAT32_SIZE);
-    bs.fat32.boot_code[MSG_OFFSET_OFFSET] = offset & 0xff;
-    bs.fat32.boot_code[MSG_OFFSET_OFFSET + 1] = offset >> 8;
+    memcpy(bs.fstype.boot_code, dummy_boot_code, BOOTCODE_FAT32_SIZE);
+    bs.fstype.boot_code[MSG_OFFSET_OFFSET] = offset & 0xff;
+    bs.fstype.boot_code[MSG_OFFSET_OFFSET + 1] = offset >> 8;
     bs.boot_sign = htole16(BOOT_SIGN);
 
     if (verbose >= 2)
@@ -422,7 +419,7 @@ static void setup_tables(void)
                 "WARNING: Not enough clusters for a 32 bit FAT!\n");
     cluster_count = clust32;
     bs.fat_length = htole16(0);
-    bs.fat32.fat32_length = htole32(fatlength32);
+    bs.fstype.fat32_length = htole32(fatlength32);
     memcpy(vi->fs_type, MSDOS_FAT32_SIGN, 8);
     root_dir_entries = 0;
 
@@ -443,13 +440,13 @@ static void setup_tables(void)
     bs.dir_entries[1] = (char) ((root_dir_entries & 0xff00) >> 8);
 
     /* set up additional FAT32 fields */
-    bs.fat32.flags = htole16(0);
-    bs.fat32.version[0] = 0;
-    bs.fat32.version[1] = 0;
-    bs.fat32.root_cluster = htole32(2);
-    bs.fat32.info_sector = htole16(1);
-    bs.fat32.backup_boot = htole16(backup_boot);
-    memset(&bs.fat32.reserved2, 0, sizeof(bs.fat32.reserved2));
+    bs.fstype.flags = htole16(0);
+    bs.fstype.version[0] = 0;
+    bs.fstype.version[1] = 0;
+    bs.fstype.root_cluster = htole32(2);
+    bs.fstype.info_sector = htole16(1);
+    bs.fstype.backup_boot = htole16(backup_boot);
+    memset(&bs.fstype.reserved2, 0, sizeof(bs.fstype.reserved2));
 
     if (num_sectors >= 65536) {
         bs.sectors[0] = (char) 0;
@@ -665,9 +662,9 @@ int main(int argc, char **argv)
     /* Is it a suitable device to build the FS on? */
     dev = open(device_name, O_EXCL | O_RDWR);
     if (dev < 0) {
-      fprintf(stderr, "%s: unable to open %s: %s\n", program_name,
-              device_name, strerror(errno));
-      exit(1);            /* The error exit code is 1! */
+        fprintf(stderr, "%s: unable to open %s: %s\n", program_name,
+                device_name, strerror(errno));
+        exit(1);                /* The error exit code is 1! */
     }
 
     if (get_device_info(dev, &devinfo) < 0)
@@ -682,8 +679,7 @@ int main(int argc, char **argv)
     blocks = devinfo.size / BLOCK_SIZE;
     orphaned_sectors = (devinfo.size % BLOCK_SIZE) / sector_size;
 
-    if (devinfo.type == TYPE_FIXED &&
-        devinfo.partition == 0)
+    if (devinfo.type == TYPE_FIXED && devinfo.partition == 0)
         die("Device partition expected,"
             " not making filesystem on entire device '%s'");
 
@@ -694,8 +690,7 @@ int main(int argc, char **argv)
     if (sector_size > 4096)
         fprintf(stderr,
                 "Warning: sector size %d > 4096 is non-standard,"
-                " filesystem may not be usable\n",
-                sector_size);
+                " filesystem may not be usable\n", sector_size);
 
     establish_params(&devinfo);
     /* Establish the media parameters */
