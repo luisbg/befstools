@@ -66,7 +66,7 @@
 #define HARD_SECTOR_SIZE   512
 #define SECTORS_PER_BLOCK ( BLOCK_SIZE / HARD_SECTOR_SIZE )
 
-#define NO_NAME "NO NAME    "
+#define NO_NAME "BEFS       "
 
 /* Macro definitions */
 
@@ -328,7 +328,7 @@ static void setup_tables(void)
     struct tm *ctime;
     struct msdos_volume_info *vi = &bs.fat32.vi;
 
-    memcpy((char *) bs.system_id, "mkfs.fat", strlen("mkfs.fat"));
+    memcpy((char *) bs.system_id, "mkfsbefs", strlen("mkfsbefs"));
 
     if (bs.media == 0xf8)
         vi->drive_number = 0x80;
