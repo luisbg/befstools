@@ -117,6 +117,20 @@ void fs_write(off_t pos, int size, void *data)
     CHANGE *new;
     int did;
 
+
+    if (verbose) {
+        int c;
+        void *d;
+
+        printf("Writing in pos %li, %d bytes:\n", pos, size);
+        for (c = 1, d = data; c <= size; c++) {
+            printf("%02X ", *(uint8_t*) d++);
+            if (c % 20 == 0)
+              printf("\n");
+        }
+        printf("\n\n");
+    }
+
     if (write_immed) {
         did_change = 1;
         if (lseek(fd, pos, 0) != pos)
