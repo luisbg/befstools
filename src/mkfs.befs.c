@@ -568,13 +568,8 @@ static void write_tables(void)
     /* clear all reserved sectors */
     for (x = 0; x < reserved_sectors; ++x)
         writebuf(blank_sector, sector_size, "reserved sector");
-    /* seek back to sector 0 and write the boot sector */
-    seekto(0, "boot sector");
-    writebuf((char *) &bs, sizeof(struct msdos_boot_sector),
-             "boot sector");
 
     /* seek to start of superblock and write them all */
-    seekto(reserved_sectors * sector_size, "first FAT");
 }
 
 /* Report the command usage and exit with the given error code */
