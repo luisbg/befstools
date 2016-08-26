@@ -201,7 +201,6 @@ static int dev = -1;            /* FS block device file handle */
 static struct msdos_boot_sector bs;     /* Boot sector data */
 static int start_data_sector;   /* Sector number for the start of the data area */
 static int start_data_block;    /* Block number for the start of the data area */
-static struct msdos_dir_entry *root_dir;        /* Root directory */
 static int size_root_dir;       /* Size of the root directory in bytes */
 static uint32_t num_sectors;    /* Total number of sectors in device */
 static int root_dir_entries = 0;        /* Number of root directory entries */
@@ -299,7 +298,6 @@ static void setup_tables(void)
     unsigned root_dir_sectors = cdiv(root_dir_entries * 32, sector_size);
 
     unsigned cluster_count = 0;
-    struct tm *ctime;
     struct msdos_volume_info *vi = &bs.fstype.vi;
 
     memcpy((char *) bs.system_id, "mkfsbefs", strlen("mkfsbefs"));
@@ -420,7 +418,6 @@ static void setup_tables(void)
     cluster_count = clust32;
     bs.fat_length = htole16(0);
     bs.fstype.fat32_length = htole32(fatlength32);
-    memcpy(vi->fs_type, MSDOS_FAT32_SIGN, 8);
     root_dir_entries = 0;
 
     /* Adjust the reserved number of sectors for alignment */
@@ -503,35 +500,6 @@ static void setup_tables(void)
     }
 
     size_root_dir = bs.cluster_size * sector_size;
-    if ((root_dir =
-         (struct msdos_dir_entry *) malloc(size_root_dir)) == NULL) {
-        die("unable to allocate space for root directory in memory");
-    }
-
-    memset(root_dir, 0, size_root_dir);
-    if (memcmp(volume_name, NO_NAME, MSDOS_NAME)) {
-        struct msdos_dir_entry *de = &root_dir[0];
-        memcpy(de->name, volume_name, MSDOS_NAME);
-        de->attr = ATTR_VOLUME;
-        if (!invariant)
-            ctime = localtime(&create_time);
-        else
-            ctime = gmtime(&create_time);
-        de->time = htole16((unsigned short) ((ctime->tm_sec >> 1) +
-                                             (ctime->tm_min << 5) +
-                                             (ctime->tm_hour << 11)));
-        de->date =
-            htole16((unsigned short) (ctime->tm_mday +
-                                      ((ctime->tm_mon + 1) << 5) +
-                                      ((ctime->tm_year - 80) << 9)));
-        de->ctime_cs = 0;
-        de->ctime = de->time;
-        de->cdate = de->date;
-        de->adate = de->date;
-        de->starthi = htole16(0);
-        de->start = htole16(0);
-        de->size = htole32(0);
-    }
 
     if (!(blank_sector = malloc(sector_size)))
         die("Out of memory");
@@ -542,7 +510,6 @@ static void setup_tables(void)
 
 #define error(str)				\
   do {						\
-    free (root_dir);				\
     die (str);					\
   } while(0)
 

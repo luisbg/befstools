@@ -418,8 +418,6 @@ void read_boot(DOS_FS * fs)
         die("Filesystem has %u clusters but only space for %u FAT entries.", fs->data_clusters, total_fat_entries - 2);
     if (!fs->root_entries && !fs->root_cluster)
         die("Root directory has zero size.");
-    if (fs->root_entries & (MSDOS_DPS - 1))
-        die("Root directory (%d entries) doesn't span an integral number of " "sectors.", fs->root_entries);
     if (logical_sector_size & (SECTOR_SIZE - 1))
         die("Logical sector size (%d bytes) is not a multiple of the physical " "sector size.", logical_sector_size);
 

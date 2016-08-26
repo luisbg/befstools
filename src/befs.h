@@ -23,8 +23,6 @@
 #include <stdint.h>
 
 #define SECTOR_SIZE 512         /* sector size (bytes) */
-#define MSDOS_DPS (SECTOR_SIZE / sizeof(struct msdos_dir_entry))
-#define MSDOS_DPS_BITS 4        /* log2(MSDOS_DPS) */
 #define MSDOS_DIR_BITS 5        /* log2(sizeof(struct msdos_dir_entry)) */
 
 #define ATTR_NONE 0             /* no attribute bits */
@@ -44,18 +42,5 @@
 #define MSDOS_NAME 11           /* maximum name length */
 #define MSDOS_DOT ".          " /* ".", padded to MSDOS_NAME chars */
 #define MSDOS_DOTDOT "..         "      /* "..", padded to MSDOS_NAME chars */
-
-struct msdos_dir_entry {
-    uint8_t name[MSDOS_NAME];   /* name including extension */
-    uint8_t attr;               /* attribute bits */
-    uint8_t lcase;              /* Case for base and extension */
-    uint8_t ctime_cs;           /* Creation time, centiseconds (0-199) */
-    uint16_t ctime;             /* Creation time */
-    uint16_t cdate;             /* Creation date */
-    uint16_t adate;             /* Last access date */
-    uint16_t starthi;           /* High 16 bits of cluster in FAT32 */
-    uint16_t time, date, start; /* time, date and first cluster */
-    uint32_t size;              /* file size (in bytes) */
-} __attribute__ ((packed));
 
 #endif                          /* _MSDOS_FS_H */
