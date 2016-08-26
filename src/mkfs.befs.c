@@ -68,6 +68,13 @@
 
 #define NO_NAME "BEFS       "
 
+#define BEFS_SUPER_MAGIC1 0x42465331	/* BFS1 */
+#define BEFS_SUPER_MAGIC2 0xdd121031
+#define BEFS_SUPER_MAGIC3 0x15b6830e
+
+#define BEFS_BYTEORDER_NATIVE 0x42494745
+#define BEFS_CLEAN  0x434C454E
+
 /* Macro definitions */
 
 /* Report a failure message and return a failure error code */
@@ -530,6 +537,8 @@ static void setup_tables(void)
 static void write_tables(void)
 {
     int x;
+    befs_super_block superblock;
+    befs_disk_block_run log_blocks, root_dir, indices;
 
     seekto(0, "start of device");
     /* clear all reserved sectors */
@@ -537,6 +546,47 @@ static void write_tables(void)
         writebuf(blank_sector, sector_size, "reserved sector");
 
     /* seek to start of superblock and write them all */
+    seekto(SECTOR_SIZE, "first sector");
+    memset(superblock.name, 0, B_OS_NAME_LENGTH);
+    memcpy((char *) superblock.name, "befs", strlen("befs"));
+    superblock.magic1 = BEFS_SUPER_MAGIC1;
+    superblock.fs_byte_order = BEFS_BYTEORDER_NATIVE;
+
+    superblock.block_size = 0x800;
+    superblock.block_shift = 0xB;
+
+    superblock.num_blocks = 0x10000;
+    superblock.used_blocks = 0x88F;
+
+    superblock.inode_size = 0x800;
+
+    superblock.magic2 = BEFS_SUPER_MAGIC2;
+    superblock.blocks_per_ag = 1;
+    superblock.ag_shift = 0xE;
+    superblock.num_ags = 0x4;
+
+    superblock.flags = BEFS_CLEAN;
+
+    log_blocks.allocation_group = 0;
+    log_blocks.start = 5;
+    log_blocks.len = 0x800;
+    superblock.log_blocks = log_blocks;
+    superblock.log_start = 0x13;
+    superblock.log_end = 0x13;
+
+    superblock.magic3 = BEFS_SUPER_MAGIC3;
+
+    root_dir.allocation_group = 0;
+    root_dir.start = 0x805;
+    root_dir.len = 1;
+    superblock.root_dir = root_dir;
+
+    indices.allocation_group = 0;
+    indices.start = 0x808;
+    indices.len = 1;
+    superblock.indices = indices;
+
+    writebuf((char *) &superblock, sizeof(befs_super_block), "Superblock");
 }
 
 /* Report the command usage and exit with the given error code */

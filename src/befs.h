@@ -43,4 +43,47 @@
 #define MSDOS_DOT ".          " /* ".", padded to MSDOS_NAME chars */
 #define MSDOS_DOTDOT "..         "      /* "..", padded to MSDOS_NAME chars */
 
+#define B_OS_NAME_LENGTH 32
+
+
+/* Block runs */
+typedef struct {
+	uint32_t allocation_group;
+	uint16_t start;
+	uint16_t len;
+} __attribute__ ((__packed__)) befs_disk_block_run;
+
+typedef befs_disk_block_run befs_disk_inode_addr;
+
+/* The Superblock structure */
+typedef struct {
+    char name[B_OS_NAME_LENGTH];
+    uint32_t magic1;
+    uint32_t fs_byte_order;
+
+    uint32_t block_size;
+    uint32_t block_shift;
+
+    uint64_t num_blocks;
+    uint64_t used_blocks;
+
+    uint32_t inode_size;
+
+    uint32_t magic2;
+    uint32_t blocks_per_ag;
+    uint32_t ag_shift;
+    uint32_t num_ags;
+
+    uint32_t flags;
+
+    befs_disk_block_run log_blocks;
+    uint64_t log_start;
+    uint64_t log_end;
+
+    uint32_t magic3;
+    befs_disk_inode_addr root_dir;
+    befs_disk_inode_addr indices;
+
+} __attribute__ ((packed)) befs_super_block;
+
 #endif                          /* _MSDOS_FS_H */
