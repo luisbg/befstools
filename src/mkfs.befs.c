@@ -66,7 +66,7 @@
 #define HARD_SECTOR_SIZE   512
 #define SECTORS_PER_BLOCK ( BLOCK_SIZE / HARD_SECTOR_SIZE )
 
-#define NO_NAME "BEFS       "
+#define NO_NAME "befs"
 
 #define BEFS_SUPER_MAGIC1 0x42465331	/* BFS1 */
 #define BEFS_SUPER_MAGIC2 0xdd121031
@@ -548,7 +548,11 @@ static void write_tables(void)
     /* seek to start of superblock and write them all */
     seekto(SECTOR_SIZE, "first sector");
     memset(superblock.name, 0, B_OS_NAME_LENGTH);
-    memcpy((char *) superblock.name, "befs", strlen("befs"));
+
+    if (memcmp(volume_name, NO_NAME, strlen(volume_name)) != 0)
+      printf("Using name: %s\n", volume_name);
+    memcpy((char *) superblock.name, volume_name, strlen(volume_name));
+
     superblock.magic1 = BEFS_SUPER_MAGIC1;
     superblock.fs_byte_order = BEFS_BYTEORDER_NATIVE;
 
@@ -632,7 +636,8 @@ int main(int argc, char **argv)
         /* Scan the command line for options */
         switch (c) {
         case 'n':              /* n : Volume name */
-            sprintf(volume_name, "%-11.11s", optarg);
+            /* TODO: cut names longer than 32 characters */
+            sprintf(volume_name, "%-s", optarg);
             break;
 
         case 'v':              /* v : Verbose execution */
