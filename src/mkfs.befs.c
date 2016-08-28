@@ -636,8 +636,9 @@ int main(int argc, char **argv)
         /* Scan the command line for options */
         switch (c) {
         case 'n':              /* n : Volume name */
-            /* TODO: cut names longer than 32 characters */
-            sprintf(volume_name, "%-s", optarg);
+            if (strlen(optarg) >= B_OS_NAME_LENGTH)
+                printf("Volume name is too long. Trimming to 32 characters\n");
+            sprintf(volume_name, "%-.32s", optarg);
             break;
 
         case 'v':              /* v : Verbose execution */
