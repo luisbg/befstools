@@ -55,7 +55,12 @@ typedef struct {
 
 typedef befs_disk_block_run befs_disk_inode_addr;
 
-/* The Superblock structure */
+/*
+ * The Superblock structure
+ *
+ * For an explanation of the elements of the structure read the
+ * write_superblock() function in src/mkfs.befs.c
+ */
 typedef struct {
     char name[B_OS_NAME_LENGTH];
     uint32_t magic1;

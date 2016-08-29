@@ -542,6 +542,12 @@ static void write_superblock(void)
     for (x = 0; x < reserved_sectors; ++x)
         writebuf(blank_sector, sector_size, "reserved sector");
 
+    /*
+     * A great explanation of the Superblock structure can be found in page 48
+     * of 'Practical File System Design with the Be File System'
+     * by Dominic Giampaolo
+     */
+
     /* seek to start of superblock and write them all */
     seekto(SECTOR_SIZE, "first sector");
     memset(superblock.name, 0, B_OS_NAME_LENGTH);
@@ -553,36 +559,37 @@ static void write_superblock(void)
     superblock.magic1 = BEFS_SUPER_MAGIC1;
     superblock.fs_byte_order = BEFS_BYTEORDER_NATIVE;
 
-    superblock.block_size = 0x800;
-    superblock.block_shift = 0xB;
+    superblock.block_size = 0x800;      /* Default block of 2048 bytes  */
+    superblock.block_shift = 0xB;       /* Matching left shift of 11 */
 
-    superblock.num_blocks = 0x10000;
-    superblock.used_blocks = 0x88F;
+    /* size of disk = num_blocks * block_size */
+    superblock.num_blocks = 0x10000;    /* 65,536 available blocks in the system */
+    superblock.used_blocks = 0x88F;     /* of which 2,191 are currently in use */
 
-    superblock.inode_size = 0x800;
+    superblock.inode_size = 0x800;      /* Inode size of 2048 */
 
     superblock.magic2 = BEFS_SUPER_MAGIC2;
-    superblock.blocks_per_ag = 1;
-    superblock.ag_shift = 0xE;
-    superblock.num_ags = 0x4;
+    superblock.blocks_per_ag = 1;       /* 1 block per allocation group */
+    superblock.ag_shift = 0xE;  /* Matching left shift of 14 */
+    superblock.num_ags = 0x4;   /* 4  allocation groups in this file system */
 
-    superblock.flags = BEFS_CLEAN;
+    superblock.flags = BEFS_CLEAN;      /* Journal transaction state is clean */
 
-    log_blocks.allocation_group = 0;
+    log_blocks.allocation_group = 0;    /* Where to find the journal */
     log_blocks.start = 5;
     log_blocks.len = 0x800;
     superblock.log_blocks = log_blocks;
-    superblock.log_start = 0x13;
-    superblock.log_end = 0x13;
+    superblock.log_start = 0x13;        /* Start index of ring buffer for the log */
+    superblock.log_end = 0x13;  /* In clean state the end matches */
 
     superblock.magic3 = BEFS_SUPER_MAGIC3;
 
-    root_dir.allocation_group = 0;
+    root_dir.allocation_group = 0;      /* Where to find root directory */
     root_dir.start = 0x805;
     root_dir.len = 1;
     superblock.root_dir = root_dir;
 
-    indices.allocation_group = 0;
+    indices.allocation_group = 0;       /* Where to find the index directory */
     indices.start = 0x808;
     indices.len = 1;
     superblock.indices = indices;
