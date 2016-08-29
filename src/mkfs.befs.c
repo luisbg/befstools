@@ -221,7 +221,7 @@ static int orphaned_sectors = 0;        /* Sectors that exist in the last block 
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void establish_params(struct device_info *info);
 static void setup_tables(void);
-static void write_tables(void);
+static void write_superblock(void);
 
 /* The function implementations */
 
@@ -531,7 +531,7 @@ static void setup_tables(void)
 	error ("failed whilst writing " errstr);	\
   } while(0)
 
-static void write_tables(void)
+static void write_superblock(void)
 {
     int x;
     befs_super_block superblock;
@@ -704,7 +704,7 @@ int main(int argc, char **argv)
     /* Establish the media parameters */
 
     setup_tables();             /* Establish the filesystem tables */
-    write_tables();             /* Write the filesystem tables away! */
+    write_superblock();         /* Write the filesystem tables away! */
 
     exit(0);                    /* Terminate with no errors! */
 }
