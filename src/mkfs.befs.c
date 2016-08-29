@@ -215,9 +215,6 @@ static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
 static int align_structures = TRUE;     /* Whether to enforce alignment */
 static int orphaned_sectors = 0;        /* Sectors that exist in the last block of filesystem */
-static int invariant = 0;       /* Whether to set normally randomized or
-                                   current time based values to
-                                   constants */
 
 /* Function prototype definitions */
 
@@ -610,10 +607,9 @@ int main(int argc, char **argv)
     struct device_info devinfo;
     struct timeval create_timeval;
 
-    enum { OPT_HELP = 1000, OPT_INVARIANT, };
+    enum { OPT_HELP = 1000, };
     const struct option long_options[] = {
         {"help", no_argument, NULL, OPT_HELP},
-        {"invariant", no_argument, NULL, OPT_INVARIANT},
         {0,}
     };
 
@@ -647,12 +643,6 @@ int main(int argc, char **argv)
 
         case OPT_HELP:
             usage(0);
-            break;
-
-        case OPT_INVARIANT:
-            invariant = 1;
-            volume_id = 0x1234abcd;
-            create_time = 1426325213;
             break;
 
         default:
