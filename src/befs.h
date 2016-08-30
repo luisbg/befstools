@@ -43,6 +43,15 @@
 #define MSDOS_DOT ".          " /* ".", padded to MSDOS_NAME chars */
 #define MSDOS_DOTDOT "..         "      /* "..", padded to MSDOS_NAME chars */
 
+#define NO_NAME "befs"
+
+#define BEFS_SUPER_MAGIC1 0x42465331	/* BFS1 */
+#define BEFS_SUPER_MAGIC2 0xdd121031
+#define BEFS_SUPER_MAGIC3 0x15b6830e
+
+#define BEFS_BYTEORDER_NATIVE 0x42494745
+#define BEFS_CLEAN  0x434C454E
+
 #define B_OS_NAME_LENGTH 32
 
 

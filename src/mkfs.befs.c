@@ -66,15 +66,6 @@
 #define HARD_SECTOR_SIZE   512
 #define SECTORS_PER_BLOCK ( BLOCK_SIZE / HARD_SECTOR_SIZE )
 
-#define NO_NAME "befs"
-
-#define BEFS_SUPER_MAGIC1 0x42465331	/* BFS1 */
-#define BEFS_SUPER_MAGIC2 0xdd121031
-#define BEFS_SUPER_MAGIC3 0x15b6830e
-
-#define BEFS_BYTEORDER_NATIVE 0x42494745
-#define BEFS_CLEAN  0x434C454E
-
 /* Macro definitions */
 
 /* Report a failure message and return a failure error code */
