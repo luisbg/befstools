@@ -49,11 +49,15 @@
 #define BEFS_SUPER_MAGIC2 0xdd121031
 #define BEFS_SUPER_MAGIC3 0x15b6830e
 
+#define BEFS_INODE_MAGIC1 0x3bbe0ad9
+
 #define BEFS_BYTEORDER_NATIVE 0x42494745
 #define BEFS_CLEAN  0x434C454E
 
 #define B_OS_NAME_LENGTH 32
 
+#define BEFS_SYMLINK_LEN 144
+#define BEFS_NUM_DIRECT_BLOCKS 12
 
 /* Block runs */
 typedef struct {
@@ -63,6 +67,8 @@ typedef struct {
 } __attribute__ ((__packed__)) befs_disk_block_run;
 
 typedef befs_disk_block_run befs_disk_inode_addr;
+typedef uint64_t befs_off_t;
+typedef uint64_t befs_time_t;
 
 /*
  * The Superblock structure
@@ -99,5 +105,48 @@ typedef struct {
     befs_disk_inode_addr indices;
 
 } __attribute__ ((packed)) befs_super_block;
+
+typedef struct {
+    befs_disk_block_run direct[BEFS_NUM_DIRECT_BLOCKS];
+    befs_off_t max_direct_range;
+    befs_disk_block_run indirect;
+    befs_off_t max_indirect_range;
+    befs_disk_block_run double_indirect;
+    befs_off_t max_double_indirect_range;
+    befs_off_t size;
+} __attribute__ ((packed)) befs_data_stream;
+
+typedef struct {
+    uint32_t type;
+    uint16_t name_size;
+    uint16_t data_size;
+    char name[1];
+} __attribute__ ((packed)) befs_small_data;
+
+/* Inode structure */
+typedef struct {
+    uint32_t magic1;
+    befs_disk_inode_addr inode_num;
+    uint32_t uid;
+    uint32_t gid;
+    uint32_t mode;
+    uint32_t flags;
+    befs_time_t create_time;
+    befs_time_t last_modified_time;
+    befs_disk_inode_addr parent;
+    befs_disk_inode_addr attributes;
+    uint32_t type;
+
+    uint32_t inode_size;
+    uint32_t etc;		/* not use */
+
+    union {
+        befs_data_stream datastream;
+        char symlink[BEFS_SYMLINK_LEN];
+    } data;
+
+    uint32_t pad[4];		/* not use */
+    befs_small_data small_data[1];
+} __attribute__ ((packed)) befs_inode;
 
 #endif                          /* _MSDOS_FS_H */
