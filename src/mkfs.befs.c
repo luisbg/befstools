@@ -560,7 +560,7 @@ static void write_superblock(void)
     superblock.inode_size = 0x800;      /* Inode size of 2048 */
 
     superblock.magic2 = BEFS_SUPER_MAGIC2;
-    superblock.blocks_per_ag = 1;       /* 1 block per allocation group */
+    superblock.blocks_per_ag = 16384;       /* 16384 block per allocation group */
     superblock.ag_shift = 0xE;  /* Matching left shift of 14 */
     superblock.num_ags = 0x4;   /* 4  allocation groups in this file system */
 
