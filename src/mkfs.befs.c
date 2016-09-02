@@ -212,7 +212,8 @@ static int orphaned_sectors = 0;        /* Sectors that exist in the last block 
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void establish_params(struct device_info *info);
 static void setup_tables(void);
-static void write_superblock(void);
+static uint16_t write_superblock(void);
+static void write_root_dir(uint16_t start);
 
 /* The function implementations */
 
@@ -522,7 +523,7 @@ static void setup_tables(void)
 	error ("failed whilst writing " errstr);	\
   } while(0)
 
-static void write_superblock(void)
+static uint16_t write_superblock(void)
 {
     int x;
     befs_super_block superblock;
@@ -576,7 +577,7 @@ static void write_superblock(void)
     superblock.magic3 = BEFS_SUPER_MAGIC3;
 
     root_dir.allocation_group = 0;      /* Where to find root directory */
-    root_dir.start = 0x805;
+    root_dir.start = 1;         /* first block after MBR/Superblock */
     root_dir.len = 1;
     superblock.root_dir = root_dir;
 
@@ -586,6 +587,51 @@ static void write_superblock(void)
     superblock.indices = indices;
 
     writebuf((char *) &superblock, sizeof(befs_super_block), "Superblock");
+
+    return superblock.block_size * root_dir.start;      // Start of root_dir inode
+}
+
+static void write_root_dir(uint16_t start)
+{
+    befs_inode root_inode;
+    befs_disk_inode_addr inode_num, parent;
+    befs_disk_block_run direct[BEFS_NUM_DIRECT_BLOCKS];
+
+    printf("Writing root dir at: %d\n", start);
+
+    seekto(start, "first sector");
+    memset(&root_inode, 0, sizeof(root_inode));
+    root_inode.magic1 = BEFS_INODE_MAGIC1;
+
+    inode_num.allocation_group = 0;
+    inode_num.start = 1;        /* this will be checked against vfs inode number */
+    inode_num.len = 1;
+    root_inode.inode_num = inode_num;
+
+    root_inode.mode = 0x10041ED;
+    root_inode.flags = 0x4001;
+
+    root_inode.create_time = 0x57BDEA95BF2A;
+    root_inode.last_modified_time = 0x57BDEA95BF2A;
+
+    /* Parent is same as inode_num, it point to iself */
+    parent.allocation_group = 0;
+    parent.start = 1;
+    parent.len = 1;
+    root_inode.parent = parent;
+
+    root_inode.inode_size = 0x800;
+    root_inode.etc = 0;
+
+    /* root inode only uses one direct block */
+    direct[0].allocation_group = 0;
+    direct[0].start = 0x806;
+    direct[0].len = 2;
+    root_inode.data.datastream.direct[0] = direct[0];
+
+    root_inode.data.datastream.max_direct_range = 0x100;
+
+    writebuf((char *) &root_inode, sizeof(befs_inode), "Root Inode");
 }
 
 /* Report the command usage and exit with the given error code */
@@ -604,6 +650,7 @@ int main(int argc, char **argv)
     int c;
     struct device_info devinfo;
     struct timeval create_timeval;
+    uint16_t root_dir_start;
 
     enum { OPT_HELP = 1000, };
     const struct option long_options[] = {
@@ -702,7 +749,8 @@ int main(int argc, char **argv)
     /* Establish the media parameters */
 
     setup_tables();             /* Establish the filesystem tables */
-    write_superblock();         /* Write the filesystem tables away! */
+    root_dir_start = write_superblock();        /* Write the Superblock */
+    write_root_dir(root_dir_start);
 
     exit(0);                    /* Terminate with no errors! */
 }
