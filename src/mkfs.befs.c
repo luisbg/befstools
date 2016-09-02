@@ -636,8 +636,8 @@ static void write_root_dir(befs_super_block superblock)
     root_inode.etc = 0;
 
     /* root inode only uses one direct block */
-    direct[0].allocation_group = 0;
-    direct[0].start = 0x806;
+    direct[0].allocation_group = superblock.root_dir.allocation_group;
+    direct[0].start = superblock.root_dir.start + 1;
     direct[0].len = 2;
     root_inode.data.datastream.direct[0] = direct[0];
 
