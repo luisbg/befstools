@@ -545,7 +545,7 @@ static uint16_t write_superblock(void)
     memset(superblock.name, 0, B_OS_NAME_LENGTH);
 
     if (memcmp(volume_name, NO_NAME, strlen(volume_name)) != 0)
-      printf("Using name: %s\n", volume_name);
+        printf("Using name: %s\n", volume_name);
     memcpy((char *) superblock.name, volume_name, strlen(volume_name));
 
     superblock.magic1 = BEFS_SUPER_MAGIC1;
@@ -561,7 +561,7 @@ static uint16_t write_superblock(void)
     superblock.inode_size = 0x800;      /* Inode size of 2048 */
 
     superblock.magic2 = BEFS_SUPER_MAGIC2;
-    superblock.blocks_per_ag = 16384;       /* 16384 block per allocation group */
+    superblock.blocks_per_ag = 16384;   /* 16384 block per allocation group */
     superblock.ag_shift = 0xE;  /* Matching left shift of 14 */
     superblock.num_ags = 0x4;   /* 4  allocation groups in this file system */
 
@@ -678,7 +678,7 @@ int main(int argc, char **argv)
         switch (c) {
         case 'n':              /* n : Volume name */
             if (strlen(optarg) >= B_OS_NAME_LENGTH)
-                printf("Volume name is too long. Trimming to 32 characters\n");
+                printf("Volume name is too long. Trimming to 32 chars\n");
             sprintf(volume_name, "%-.32s", optarg);
             break;
 
