@@ -212,8 +212,8 @@ static int orphaned_sectors = 0;        /* Sectors that exist in the last block 
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void establish_params(struct device_info *info);
 static void setup_tables(void);
-static uint16_t write_superblock(void);
-static void write_root_dir(uint16_t start);
+static befs_super_block write_superblock(void);
+static void write_root_dir(befs_super_block superblock);
 
 /* The function implementations */
 
@@ -523,7 +523,7 @@ static void setup_tables(void)
 	error ("failed whilst writing " errstr);	\
   } while(0)
 
-static uint16_t write_superblock(void)
+static befs_super_block write_superblock(void)
 {
     int x;
     befs_super_block superblock;
@@ -588,17 +588,19 @@ static uint16_t write_superblock(void)
 
     writebuf((char *) &superblock, sizeof(befs_super_block), "Superblock");
 
-    return superblock.block_size * root_dir.start;      // Start of root_dir inode
+    return superblock;
 }
 
-static void write_root_dir(uint16_t start)
+static void write_root_dir(befs_super_block superblock)
 {
+    uint16_t start;
     befs_inode root_inode;
     befs_disk_inode_addr inode_num, parent, attributes;
     befs_disk_block_run direct[BEFS_NUM_DIRECT_BLOCKS];
     befs_disk_block_run indirect, double_indirect;
     int c;
 
+    start = superblock.block_size * superblock.root_dir.start;
     printf("Writing root dir at: %d\n", start);
 
     seekto(start, "first sector");
@@ -691,7 +693,7 @@ int main(int argc, char **argv)
     int c;
     struct device_info devinfo;
     struct timeval create_timeval;
-    uint16_t root_dir_start;
+    befs_super_block superblock;
 
     enum { OPT_HELP = 1000, };
     const struct option long_options[] = {
@@ -790,8 +792,8 @@ int main(int argc, char **argv)
     /* Establish the media parameters */
 
     setup_tables();             /* Establish the filesystem tables */
-    root_dir_start = write_superblock();        /* Write the Superblock */
-    write_root_dir(root_dir_start);
+    superblock = write_superblock();    /* Write the Superblock */
+    write_root_dir(superblock);
 
     exit(0);                    /* Terminate with no errors! */
 }
