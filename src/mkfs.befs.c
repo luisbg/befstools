@@ -594,13 +594,14 @@ static uint16_t write_superblock(void)
 static void write_root_dir(uint16_t start)
 {
     befs_inode root_inode;
-    befs_disk_inode_addr inode_num, parent;
+    befs_disk_inode_addr inode_num, parent, attributes;
     befs_disk_block_run direct[BEFS_NUM_DIRECT_BLOCKS];
+    befs_disk_block_run indirect, double_indirect;
+    int c;
 
     printf("Writing root dir at: %d\n", start);
 
     seekto(start, "first sector");
-    memset(&root_inode, 0, sizeof(root_inode));
     root_inode.magic1 = BEFS_INODE_MAGIC1;
 
     inode_num.allocation_group = 0;
@@ -608,6 +609,8 @@ static void write_root_dir(uint16_t start)
     inode_num.len = 1;
     root_inode.inode_num = inode_num;
 
+    root_inode.uid = 0;
+    root_inode.gid = 0;
     root_inode.mode = 0x10041ED;
     root_inode.flags = 0x4001;
 
@@ -620,6 +623,13 @@ static void write_root_dir(uint16_t start)
     parent.len = 1;
     root_inode.parent = parent;
 
+    attributes.allocation_group = 0;
+    attributes.start = 0;
+    attributes.len = 0;
+    root_inode.attributes = attributes;
+
+    root_inode.type = 0;
+
     root_inode.inode_size = 0x800;
     root_inode.etc = 0;
 
@@ -629,7 +639,38 @@ static void write_root_dir(uint16_t start)
     direct[0].len = 2;
     root_inode.data.datastream.direct[0] = direct[0];
 
+    /* set the rest of direct blocks to 0 */
+    for (c = 1; c < BEFS_NUM_DIRECT_BLOCKS; c++) {
+        direct[c].allocation_group = 0;
+        direct[c].start = 0;
+        direct[c].len = 0;
+        root_inode.data.datastream.direct[c] = direct[c];
+    }
     root_inode.data.datastream.max_direct_range = 0x100;
+
+    indirect.allocation_group = 0;
+    indirect.start = 0;
+    indirect.len = 0;
+    root_inode.data.datastream.indirect = indirect;
+    root_inode.data.datastream.max_indirect_range = 0;
+
+    double_indirect.allocation_group = 0;
+    double_indirect.start = 0;
+    double_indirect.len = 0;
+    root_inode.data.datastream.double_indirect = double_indirect;
+    root_inode.data.datastream.max_double_indirect_range = 0;
+
+    root_inode.data.datastream.size = 0;
+
+    root_inode.pad[0] = 0;
+    root_inode.pad[1] = 0;
+    root_inode.pad[2] = 0;
+    root_inode.pad[3] = 0;
+
+    root_inode.small_data[0].type = 0;
+    root_inode.small_data[0].name_size = 0;
+    root_inode.small_data[0].data_size = 0;
+    root_inode.small_data[0].name[0] = 0x99;
 
     writebuf((char *) &root_inode, sizeof(befs_inode), "Root Inode");
 }
