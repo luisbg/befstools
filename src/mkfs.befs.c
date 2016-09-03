@@ -214,8 +214,9 @@ static void establish_params(struct device_info *info);
 static void setup_tables(void);
 static befs_super_block write_superblock(void);
 static befs_inode write_root_dir(befs_super_block superblock);
-static void write_btree_super(befs_super_block superblock,
-                              befs_inode root_dir);
+static uint16_t write_btree_super(befs_super_block superblock,
+                                  befs_inode root_dir);
+static void write_btree_root(uint16_t pos);
 
 /* The function implementations */
 
@@ -681,8 +682,8 @@ static befs_inode write_root_dir(befs_super_block superblock)
     return root_inode;
 }
 
-static void write_btree_super(befs_super_block superblock,
-                              befs_inode root_dir)
+static uint16_t write_btree_super(befs_super_block superblock,
+                                  befs_inode root_dir)
 {
     befs_btree_super bt_super;
     befs_disk_block_run first_direct;
@@ -704,6 +705,25 @@ static void write_btree_super(befs_super_block superblock,
     bt_super.max_size = 0x800;
 
     writebuf((char *) &bt_super, sizeof(befs_btree_super), "Btree Super");
+
+    return start + bt_super.root_node_ptr;
+}
+
+static void write_btree_root(uint16_t pos)
+{
+    befs_btree_nodehead root_node;
+
+    printf("Writing btree root node at: %d\n", pos);
+
+    seekto(pos, "btree root");
+    root_node.left = ~(0);
+    root_node.right = ~(0);
+    root_node.overflow = ~(0);
+    root_node.all_key_count = 2;
+    root_node.all_key_length = 3;
+
+    writebuf((char *) &root_node, sizeof(befs_btree_nodehead),
+             "Btree Root");
 }
 
 /* Report the command usage and exit with the given error code */
@@ -724,6 +744,7 @@ int main(int argc, char **argv)
     struct timeval create_timeval;
     befs_super_block superblock;
     befs_inode root_dir;
+    uint16_t root_node_pos;
 
     enum { OPT_HELP = 1000, };
     const struct option long_options[] = {
@@ -824,7 +845,8 @@ int main(int argc, char **argv)
     setup_tables();             /* Establish the filesystem tables */
     superblock = write_superblock();    /* Write the Superblock */
     root_dir = write_root_dir(superblock);
-    write_btree_super(superblock, root_dir);
+    root_node_pos = write_btree_super(superblock, root_dir);
+    write_btree_root(root_node_pos);
 
     exit(0);                    /* Terminate with no errors! */
 }

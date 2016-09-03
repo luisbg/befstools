@@ -162,4 +162,15 @@ typedef struct {
     uint64_t max_size;
 } __attribute__ ((packed)) befs_btree_super;
 
+/*
+ * Header structure of each btree node
+ */
+typedef struct {
+    uint64_t left;
+    uint64_t right;
+    uint64_t overflow;
+    uint16_t all_key_count;
+    uint16_t all_key_length;
+} __attribute__ ((packed)) befs_btree_nodehead;
+
 #endif                          /* _BEFS_H */
