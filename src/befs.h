@@ -51,6 +51,8 @@
 
 #define BEFS_INODE_MAGIC1 0x3bbe0ad9
 
+#define BEFS_BTREE_MAGIC 0x69f6c2e8
+
 #define BEFS_BYTEORDER_NATIVE 0x42494745
 #define BEFS_CLEAN  0x434C454E
 
@@ -148,5 +150,16 @@ typedef struct {
     uint32_t pad[4];		/* not use */
     befs_small_data small_data[1];
 } __attribute__ ((packed)) befs_inode;
+
+/* B+tree superblock */
+typedef struct {
+    uint32_t magic;
+    uint32_t node_size;
+    uint32_t max_depth;
+    uint32_t data_type;
+    uint64_t root_node_ptr;
+    uint64_t free_node_ptr;
+    uint64_t max_size;
+} __attribute__ ((packed)) befs_btree_super;
 
 #endif                          /* _MSDOS_FS_H */

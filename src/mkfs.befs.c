@@ -213,7 +213,9 @@ static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void establish_params(struct device_info *info);
 static void setup_tables(void);
 static befs_super_block write_superblock(void);
-static void write_root_dir(befs_super_block superblock);
+static befs_inode write_root_dir(befs_super_block superblock);
+static void write_btree_super(befs_super_block superblock,
+                              befs_inode root_dir);
 
 /* The function implementations */
 
@@ -591,7 +593,7 @@ static befs_super_block write_superblock(void)
     return superblock;
 }
 
-static void write_root_dir(befs_super_block superblock)
+static befs_inode write_root_dir(befs_super_block superblock)
 {
     uint16_t start;
     befs_inode root_inode;
@@ -675,6 +677,33 @@ static void write_root_dir(befs_super_block superblock)
     root_inode.small_data[0].name[0] = 0x99;
 
     writebuf((char *) &root_inode, sizeof(befs_inode), "Root Inode");
+
+    return root_inode;
+}
+
+static void write_btree_super(befs_super_block superblock,
+                              befs_inode root_dir)
+{
+    befs_btree_super bt_super;
+    befs_disk_block_run first_direct;
+    uint16_t start;
+
+    first_direct = root_dir.data.datastream.direct[0];
+    start = superblock.block_size * first_direct.start;
+    printf("Writing btree super at: %d\n", start);
+
+    seekto(start, "btree super");
+    bt_super.magic = BEFS_BTREE_MAGIC;
+
+    bt_super.node_size = 0x400;
+    bt_super.max_depth = 1;
+    bt_super.data_type = 0;
+
+    bt_super.root_node_ptr = 0x400;
+    bt_super.free_node_ptr = ~(0);
+    bt_super.max_size = 0x800;
+
+    writebuf((char *) &bt_super, sizeof(befs_btree_super), "Btree Super");
 }
 
 /* Report the command usage and exit with the given error code */
@@ -694,6 +723,7 @@ int main(int argc, char **argv)
     struct device_info devinfo;
     struct timeval create_timeval;
     befs_super_block superblock;
+    befs_inode root_dir;
 
     enum { OPT_HELP = 1000, };
     const struct option long_options[] = {
@@ -793,7 +823,8 @@ int main(int argc, char **argv)
 
     setup_tables();             /* Establish the filesystem tables */
     superblock = write_superblock();    /* Write the Superblock */
-    write_root_dir(superblock);
+    root_dir = write_root_dir(superblock);
+    write_btree_super(superblock, root_dir);
 
     exit(0);                    /* Terminate with no errors! */
 }

@@ -14,3 +14,4 @@ src/version.h
 autom4te.cache
 src/mkfs.befs
 src/befslabel
+LBG_TODO
