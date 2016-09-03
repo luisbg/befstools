@@ -1,4 +1,4 @@
-/* msdos_fs.h - MS-DOS filesystem constants/structures
+/* befs.h - BeOS filesystem constants/structures
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
    can be found in /usr/share/common-licenses/GPL-3 file.
 */
 
-#ifndef _MSDOS_FS_H
-#define _MSDOS_FS_H
+#ifndef _BEFS_H
+#define _BEFS_H
 
 #include <stdint.h>
 
@@ -162,4 +162,4 @@ typedef struct {
     uint64_t max_size;
 } __attribute__ ((packed)) befs_btree_super;
 
-#endif                          /* _MSDOS_FS_H */
+#endif                          /* _BEFS_H */
