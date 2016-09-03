@@ -206,6 +206,7 @@ static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
 static int align_structures = TRUE;     /* Whether to enforce alignment */
 static int orphaned_sectors = 0;        /* Sectors that exist in the last block of filesystem */
+static uint16_t current_pos = 0;        /* current seek position */
 
 /* Function prototype definitions */
 
@@ -515,6 +516,7 @@ static void setup_tables(void)
 #define seekto(pos,errstr)						\
   do {									\
     off_t __pos = (pos);						\
+    current_pos = pos;							\
     if (lseek (dev, __pos, SEEK_SET) != __pos)				\
 	error ("seek to " errstr " failed whilst writing tables");	\
   } while(0)
@@ -716,7 +718,9 @@ static void write_btree_root(befs_super_block superblock, uint16_t pos)
     unsigned long int index_off;
     ulong align;
     uint16_t keylen_index;
-    befs_btree_root_index index;
+    uint16_t first_key_pos, second_key_pos;
+    uint64_t key;
+    int c;
 
     printf("Writing btree root node at: %d\n", pos);
 
@@ -733,7 +737,7 @@ static void write_btree_root(befs_super_block superblock, uint16_t pos)
     // Seek to end of node head, where the keys are concatenated
     seekto(pos + sizeof(befs_btree_nodehead), "Start of key index");
     writebuf(".", 1, "First key is '.'");
-    seekto(pos + sizeof(befs_btree_nodehead) + 1, "Start of second key");
+    seekto(current_pos + 1, "Start of second key");
     writebuf("..", 2, "Second key is '..'");
 
     index_off = sizeof(befs_btree_nodehead) + root_node.all_key_length;
@@ -743,13 +747,20 @@ static void write_btree_root(befs_super_block superblock, uint16_t pos)
     keylen_index = pos + index_off;
 
     seekto(keylen_index, "Start of the keylen index");
+    first_key_pos = 1;          /* first key is at 1 */
+    writebuf((char *) &first_key_pos, sizeof(uint16_t), "First key pos");
 
-    index.first_key_pos = 1;    /* first key is at 1 */
-    index.second_key_pos = 3;   /* since first key is of size 2, second is at 3 */
-    index.first_key = superblock.root_dir.start;
-    index.second_key = superblock.root_dir.start;
+    seekto(current_pos + 2, "Second keylen index");
+    second_key_pos = 3;         /* since first key is of size 2, second is at 3 */
+    writebuf((char *) &second_key_pos, sizeof(uint16_t), "Second key pos");
 
-    writebuf((char *) &index, sizeof(befs_btree_root_index), "Root index");
+    /* Both keys point to the root_dir start */
+    seekto(current_pos + 2, "Next key");
+    for (c = 0; c < 2; c++) {
+        key = superblock.root_dir.start;
+        writebuf((char *) &key, sizeof(uint64_t), "First key");
+        seekto(current_pos + 8, "Next key");
+    }
 }
 
 /* Report the command usage and exit with the given error code */
