@@ -216,7 +216,7 @@ static befs_super_block write_superblock(void);
 static befs_inode write_root_dir(befs_super_block superblock);
 static uint16_t write_btree_super(befs_super_block superblock,
                                   befs_inode root_dir);
-static void write_btree_root(uint16_t pos);
+static void write_btree_root(befs_super_block superblock, uint16_t pos);
 
 /* The function implementations */
 
@@ -709,9 +709,14 @@ static uint16_t write_btree_super(befs_super_block superblock,
     return start + bt_super.root_node_ptr;
 }
 
-static void write_btree_root(uint16_t pos)
+static void write_btree_root(befs_super_block superblock, uint16_t pos)
 {
     befs_btree_nodehead root_node;
+    const int keylen_align = 8;
+    unsigned long int index_off;
+    ulong align;
+    uint16_t keylen_index;
+    befs_btree_root_index index;
 
     printf("Writing btree root node at: %d\n", pos);
 
@@ -724,6 +729,27 @@ static void write_btree_root(uint16_t pos)
 
     writebuf((char *) &root_node, sizeof(befs_btree_nodehead),
              "Btree Root");
+
+    // Seek to end of node head, where the keys are concatenated
+    seekto(pos + sizeof(befs_btree_nodehead), "Start of key index");
+    writebuf(".", 1, "First key is '.'");
+    seekto(pos + sizeof(befs_btree_nodehead) + 1, "Start of second key");
+    writebuf("..", 2, "Second key is '..'");
+
+    index_off = sizeof(befs_btree_nodehead) + root_node.all_key_length;
+    align = index_off % keylen_align;
+    if (align)
+        index_off += keylen_align - align;
+    keylen_index = pos + index_off;
+
+    seekto(keylen_index, "Start of the keylen index");
+
+    index.first_key_pos = 1;    /* first key is at 1 */
+    index.second_key_pos = 3;   /* since first key is of size 2, second is at 3 */
+    index.first_key = superblock.root_dir.start;
+    index.second_key = superblock.root_dir.start;
+
+    writebuf((char *) &index, sizeof(befs_btree_root_index), "Root index");
 }
 
 /* Report the command usage and exit with the given error code */
@@ -846,7 +872,7 @@ int main(int argc, char **argv)
     superblock = write_superblock();    /* Write the Superblock */
     root_dir = write_root_dir(superblock);
     root_node_pos = write_btree_super(superblock, root_dir);
-    write_btree_root(root_node_pos);
+    write_btree_root(superblock, root_node_pos);
 
     exit(0);                    /* Terminate with no errors! */
 }

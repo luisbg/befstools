@@ -173,4 +173,10 @@ typedef struct {
     uint16_t all_key_length;
 } __attribute__ ((packed)) befs_btree_nodehead;
 
+typedef struct {
+    uint16_t first_key_pos;
+    uint16_t second_key_pos;
+    uint64_t first_key;
+    uint64_t second_key;
+} __attribute__ ((packed)) befs_btree_root_index;
 #endif                          /* _BEFS_H */
