@@ -62,7 +62,7 @@
 #define FALSE 0
 
 #define TEST_BUFFER_BLOCKS 16
-#define BLOCK_SIZE         1024
+#define BLOCK_SIZE         2048
 #define HARD_SECTOR_SIZE   512
 #define SECTORS_PER_BLOCK ( BLOCK_SIZE / HARD_SECTOR_SIZE )
 
@@ -556,11 +556,11 @@ static befs_super_block write_superblock(void)
     superblock.magic1 = BEFS_SUPER_MAGIC1;
     superblock.fs_byte_order = BEFS_BYTEORDER_NATIVE;
 
-    superblock.block_size = 0x800;      /* Default block of 2048 bytes  */
+    superblock.block_size = BLOCK_SIZE; /* Default block of 2048 bytes  */
     superblock.block_shift = 0xB;       /* Matching left shift of 11 */
 
     /* size of disk = num_blocks * block_size */
-    superblock.num_blocks = 0x10000;    /* 65,536 available blocks in the system */
+    superblock.num_blocks = blocks;
     superblock.used_blocks = 0x88F;     /* of which 2,191 are currently in use */
 
     superblock.inode_size = 0x800;      /* Inode size of 2048 */
