@@ -55,16 +55,12 @@ static void usage(int error)
 
 int main(int argc, char *argv[])
 {
-    DOS_FS fs = { 0 };
     rw = 0;
 
     int i;
 
     char *device = NULL;
-    char label[12] = { 0 };
-
-    off_t offset;
-    DIR_ENT de;
+    char label[B_OS_NAME_LENGTH] = { 0 };
 
     if (argc < 2 || argc > 3)
         usage(1);
@@ -72,42 +68,30 @@ int main(int argc, char *argv[])
     if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))
         usage(0);
     else if (!strcmp(argv[1], "-V") || !strcmp(argv[1], "--version")) {
-        printf("fatlabel " VERSION " (" VERSION_DATE ")\n");
+        printf("befslabel " VERSION " (" VERSION_DATE ")\n");
         exit(0);
     }
 
     device = argv[1];
     if (argc == 3) {
-        strncpy(label, argv[2], 11);
-        if (strlen(argv[2]) > 11) {
+        strncpy(label, argv[2], B_OS_NAME_LENGTH);
+        if (strlen(argv[2]) > B_OS_NAME_LENGTH - 1) {
             fprintf(stderr,
-                    "fatlabel: labels can be no longer than 11 characters\n");
+                    "befslabel: labels can be no longer than %d characters\n",
+                    B_OS_NAME_LENGTH);
             exit(1);
         }
-        for (i = 0; label[i] && i < 11; i++)
-            /* don't know if here should be more strict !uppercase(label[i]) */
-            if (islower(label[i])) {
-                fprintf(stderr,
-                        "fatlabel: warning - lowercase labels might not work properly with DOS or Windows\n");
-                break;
-            }
         rw = 1;
     }
 
     fs_open(device, rw);
-    read_boot(&fs);
-    if (fs.fat_bits == 32)
-        read_fat(&fs);
     if (!rw) {
-        offset = find_volume_de(&fs, &de);
-        if (offset == 0)
-            fprintf(stdout, "%s\n", fs.label);
-        else
-            fprintf(stdout, "%.8s%.3s\n", de.name, de.name + 8);
+        fs_read(SECTOR_SIZE, B_OS_NAME_LENGTH, label);
+        fprintf(stdout, "%s\n", label);
         exit(0);
     }
 
-    write_label(&fs, label);
+    fs_write(SECTOR_SIZE, B_OS_NAME_LENGTH, label);
     fs_close(rw);
     return 0;
 }
