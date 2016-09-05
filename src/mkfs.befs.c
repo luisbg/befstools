@@ -557,7 +557,7 @@ static befs_super_block write_superblock(void)
     superblock.fs_byte_order = BEFS_BYTEORDER_NATIVE;
 
     superblock.block_size = BLOCK_SIZE; /* Default block of 2048 bytes  */
-    superblock.block_shift = 0xB;       /* Matching left shift of 11 */
+    superblock.block_shift = ffs(BLOCK_SIZE) -1;       /* Matching left shift of 11 */
 
     /* size of disk = num_blocks * block_size */
     superblock.num_blocks = blocks;
