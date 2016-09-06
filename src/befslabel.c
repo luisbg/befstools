@@ -36,7 +36,6 @@
 #include "common.h"
 #include "fsck.befs.h"
 #include "io.h"
-#include "boot.h"
 #include "fat.h"
 
 int interactive = 0, rw = 0, list = 0, test = 0, verbose = 0, write_immed =
@@ -56,8 +55,6 @@ static void usage(int error)
 int main(int argc, char *argv[])
 {
     rw = 0;
-
-    int i;
 
     char *device = NULL;
     char label[B_OS_NAME_LENGTH] = { 0 };
