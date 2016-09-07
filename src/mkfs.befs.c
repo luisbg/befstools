@@ -84,8 +84,10 @@ struct msdos_volume_info {
     uint8_t fs_type[8];         /* Typically FAT12 or FAT16 */
 } __attribute__ ((packed));
 
-struct msdos_boot_sector {
-    uint8_t boot_jump[3];       /* Boot strap short or near jump */
+/* Use own definition of boot sector structure -- the kernel headers'
+ * name for it is msdos_boot_sector in 2.0 and fat_boot_sector in 2.1 ... */
+struct boot_sector {
+    uint8_t ignored[3];         /* Boot strap short or near jump */
     uint8_t system_id[8];       /* Name - can be used to special case
                                    partition manager volumes */
     uint8_t sector_size[2];     /* bytes per logical sector */
@@ -100,18 +102,26 @@ struct msdos_boot_sector {
     uint16_t heads;             /* number of heads */
     uint32_t hidden;            /* hidden sectors (unused) */
     uint32_t total_sect;        /* number of sectors (if sectors == 0) */
-    struct {
-        uint32_t fat32_length;  /* sectors/FAT */
-        uint16_t flags;         /* bit 8: fat mirroring, low 4: active fat */
-        uint8_t version[2];     /* major, minor filesystem version */
-        uint32_t root_cluster;  /* first cluster in root directory */
-        uint16_t info_sector;   /* filesystem info sector */
-        uint16_t backup_boot;   /* backup boot sector */
-        uint16_t reserved2[6];  /* Unused */
-        struct msdos_volume_info vi;
-        uint8_t boot_code[BOOTCODE_FAT32_SIZE];
-    } __attribute__ ((packed)) fstype;
-    uint16_t boot_sign;
+
+    /* The following fields are only used by FAT32 */
+    uint32_t fat32_length;      /* sectors/FAT */
+    uint16_t flags;             /* bit 8: fat mirroring, low 4: active fat */
+    uint8_t version[2];         /* major, minor filesystem version */
+    uint32_t root_cluster;      /* first cluster in root directory */
+    uint16_t info_sector;       /* filesystem info sector */
+    uint16_t backup_boot;       /* backup boot sector */
+    uint8_t reserved2[12];      /* Unused */
+
+    uint8_t drive_number;       /* Logical Drive Number */
+    uint8_t reserved3;          /* Unused */
+
+    uint8_t extended_sig;       /* Extended Signature (0x29) */
+    uint32_t serial;            /* Serial number */
+    uint8_t label[11];          /* FS label */
+    uint8_t fs_type[8];         /* FS Type */
+
+    /* fill up to 512 bytes */
+    uint8_t junk[422];
 } __attribute__ ((packed));
 
 /* The "boot code" we put into the filesystem... it writes a message and
@@ -157,7 +167,7 @@ static uint64_t blocks;         /* Number of blocks in filesystem */
 static int sector_size = 512;   /* Size of a logical sector */
 static int reserved_sectors = 0;        /* Number of reserved sectors */
 static int dev = -1;            /* FS block device file handle */
-static struct msdos_boot_sector bs;     /* Boot sector data */
+static struct boot_sector bs;     /* Boot sector data */
 static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */

@@ -34,8 +34,8 @@
 #include <getopt.h>
 #include <ctype.h>
 
+#include "befs.h"
 #include "common.h"
-#include "fsck.befs.h"
 #include "io.h"
 
 int rw = 0, verbose = 0, write_immed = 0;
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    fs_write(SECTOR_SIZE, B_OS_NAME_LENGTH, label);
+    fs_write(SECTOR_SIZE, B_OS_NAME_LENGTH, label, verbose, write_immed);
     fs_close(rw);
     return 0;
 }

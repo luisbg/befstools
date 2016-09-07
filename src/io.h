@@ -44,7 +44,7 @@ int fs_test(off_t pos, int size);
 /* Returns a non-zero integer if SIZE bytes starting at POS can be read without
    errors. Otherwise, it returns zero. */
 
-void fs_write(off_t pos, int size, void *data);
+void fs_write(off_t pos, int size, void *data, int verbose, int write_immed);
 
 /* If write_immed is non-zero, SIZE bytes are written from DATA to the disk,
    starting at POS. If write_immed is zero, the change is added to a list in

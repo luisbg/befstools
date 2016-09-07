@@ -32,7 +32,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include "fsck.befs.h"
+#include "befs.h"
 #include "common.h"
 #include "io.h"
 
@@ -103,7 +103,8 @@ int fs_test(off_t pos, int size)
     return okay;
 }
 
-void fs_write(off_t pos, int size, void *data)
+void fs_write(off_t pos, int size, void *data, int verbose,
+              int write_immed)
 {
     CHANGE *new;
     int did;
