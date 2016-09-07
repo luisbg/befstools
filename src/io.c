@@ -22,15 +22,6 @@
    can be found in /usr/share/common-licenses/GPL-3 file.
 */
 
-/*
- * Thu Feb 26 01:15:36 CET 1998: Martin Schulze <joey@infodrom.north.de>
- *	Fixed nasty bug that caused every file with a name like
- *	xxxxxxxx.xxx to be treated as bad name that needed to be fixed.
- */
-
-/* FAT32, VFAT, Atari format support, and various fixes additions May 1998
- * by Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de> */
-
 #define _LARGEFILE64_SOURCE
 #include <stdlib.h>
 #include <stdio.h>

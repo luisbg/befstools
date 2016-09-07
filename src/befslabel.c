@@ -1,10 +1,11 @@
-/* fatlabel.c - User interface
+/* befslabel.c - User interface
 
    Copyright (C) 1993 Werner Almesberger <werner.almesberger@lrc.di.epfl.ch>
    Copyright (C) 1998 Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de>
    Copyright (C) 2007 Red Hat, Inc.
    Copyright (C) 2008-2014 Daniel Baumann <mail@daniel-baumann.ch>
    Copyright (C) 2015 Andreas Bombe <aeb@debian.org>
+   Copyright (C) 2016 Luis de Bethencourt <luis@debethencout.com>
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,10 +38,7 @@
 #include "fsck.befs.h"
 #include "io.h"
 
-int interactive = 0, rw = 0, list = 0, test = 0, verbose = 0, write_immed =
-    0;
-unsigned n_files = 0;
-void *mem_queue = NULL;
+int rw = 0, verbose = 0, write_immed = 0;
 
 static void usage(int error)
 {
