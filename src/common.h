@@ -40,9 +40,4 @@ int min(int a, int b);
 
 /* Returns the smaller integer value of a and b. */
 
-char get_key(const char *valid, const char *prompt);
-
-/* Displays PROMPT and waits for user input. Only characters in VALID are
-   accepted. Terminates the program on EOF. Returns the character. */
-
 #endif

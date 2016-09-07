@@ -36,7 +36,6 @@
 #include "common.h"
 #include "fsck.befs.h"
 #include "io.h"
-#include "fat.h"
 
 int interactive = 0, rw = 0, list = 0, test = 0, verbose = 0, write_immed =
     0;

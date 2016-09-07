@@ -116,7 +116,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
 am_befslabel_OBJECTS = befslabel.$(OBJEXT) common.$(OBJEXT) \
-	io.$(OBJEXT) fat.$(OBJEXT)
+	io.$(OBJEXT)
 befslabel_OBJECTS = $(am_befslabel_OBJECTS)
 befslabel_LDADD = $(LDADD)
 am__dirstamp = $(am__leading_dot)dirstamp
@@ -304,7 +304,7 @@ mkfs_befs_CPPFLAGS = -I$(srcdir)/blkdev
 mkfs_befs_CFLAGS = $(AM_CFLAGS) $(UDEV_CFLAGS)
 mkfs_befs_LDFLAGS = $(UDEV_LIBS)
 befslabel_SOURCES = befslabel.c common.c common.h fsck.befs.h befs.h io.c \
-		    io.h fat.c fat.h
+		    io.h
 
 testdevinfo_SOURCES = testdevinfo.c $(mkfs_common_sources)
 testdevinfo_CPPFLAGS = -I$(srcdir)/blkdev
@@ -422,7 +422,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/befslabel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkfs_befs-device_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkfs_befs-mkfs.befs.Po@am__quote@
