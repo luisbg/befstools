@@ -58,10 +58,6 @@
 
 /* Constant definitions */
 
-#define TRUE 1                  /* Boolean constants */
-#define FALSE 0
-
-#define TEST_BUFFER_BLOCKS 16
 #define BLOCK_SIZE         2048
 #define HARD_SECTOR_SIZE   512
 #define SECTORS_PER_BLOCK ( BLOCK_SIZE / HARD_SECTOR_SIZE )
@@ -72,29 +68,7 @@
 
 #define die( str ) fatal_error( "%s: " str "\n" )
 
-/* Compute ceil(a/b) */
-
-static inline int cdiv(int a, int b)
-{
-    return (a + b - 1) / b;
-}
-
-/* FAT values */
-#define FAT_EOF      (0x0ffffff8)
-#define FAT_BAD      0x0ffffff7
-
-#define MSDOS_EXT_SIGN 0x29     /* extended boot sector signature */
-#define MSDOS_FAT32_SIGN "FAT32   "     /* FAT32 filesystem signature */
-
-#define BOOT_SIGN 0xAA55        /* Boot sector magic number */
-
-#define MAX_CLUST_12	((1 << 12) - 16)
-#define MAX_CLUST_16	((1 << 16) - 16)
-#define MIN_CLUST_32    65529
-/* M$ says the high 4 bits of a FAT32 FAT entry are reserved and don't belong
- * to the cluster number. So the max. cluster# is based on 2^28 */
-#define MAX_CLUST_32	((1 << 28) - 16)
-
+#define BOOT_SIGN 		0xAA55  /* Boot sector magic number */
 #define BOOTCODE_SIZE		448
 #define BOOTCODE_FAT32_SIZE	420
 
@@ -140,20 +114,10 @@ struct msdos_boot_sector {
     uint16_t boot_sign;
 } __attribute__ ((packed));
 
-struct fat32_fsinfo {
-    uint32_t reserved1;         /* Nothing as far as I can tell */
-    uint32_t signature;         /* 0x61417272L */
-    uint32_t free_clusters;     /* Free cluster count.  -1 if unknown */
-    uint32_t next_cluster;      /* Most recently allocated cluster.
-                                 * Unused under Linux. */
-    uint32_t reserved2[4];
-};
-
 /* The "boot code" we put into the filesystem... it writes a message and
    tells the user to try again */
 
 unsigned char dummy_boot_jump[3] = { 0xeb, 0x3c, 0x90 };
-
 unsigned char dummy_boot_jump_m68k[2] = { 0x60, 0x1c };
 
 #define MSG_OFFSET_OFFSET 3
@@ -191,20 +155,12 @@ static time_t create_time;      /* Creation time */
 static char volume_name[] = NO_NAME;    /* Volume name */
 static uint64_t blocks;         /* Number of blocks in filesystem */
 static int sector_size = 512;   /* Size of a logical sector */
-static int backup_boot = 0;     /* Sector# of backup boot sector */
 static int reserved_sectors = 0;        /* Number of reserved sectors */
-static int nr_fats = 2;         /* Default number of FATs to produce */
-static int size_fat = 32;       /* Size in bits of FAT entries */
 static int dev = -1;            /* FS block device file handle */
 static struct msdos_boot_sector bs;     /* Boot sector data */
-static int start_data_sector;   /* Sector number for the start of the data area */
-static int start_data_block;    /* Block number for the start of the data area */
-static int size_root_dir;       /* Size of the root directory in bytes */
-static uint32_t num_sectors;    /* Total number of sectors in device */
 static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
-static int align_structures = TRUE;     /* Whether to enforce alignment */
 static int orphaned_sectors = 0;        /* Sectors that exist in the last block of filesystem */
 static uint16_t current_pos = 0;        /* current seek position */
 
@@ -212,7 +168,6 @@ static uint16_t current_pos = 0;        /* current seek position */
 
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void establish_params(struct device_info *info);
-static void setup_tables(void);
 static befs_super_block write_superblock(void);
 static befs_inode write_root_dir(befs_super_block superblock);
 static uint16_t write_btree_super(befs_super_block superblock,
@@ -273,241 +228,6 @@ static void establish_params(struct device_info *info)
     bs.cluster_size = cluster_size;
 }
 
-/*
- * If alignment is enabled, round the first argument up to the second; the
- * latter must be a power of two.
- */
-static unsigned int align_object(unsigned int sectors,
-                                 unsigned int clustsize)
-{
-    if (align_structures)
-        return (sectors + clustsize - 1) & ~(clustsize - 1);
-    else
-        return sectors;
-}
-
-/* Create the filesystem data tables */
-
-static void setup_tables(void)
-{
-    unsigned fatdata32;         /* Sectors for FATs + data area (FAT32) */
-    unsigned fatlength32;
-    unsigned maxclust32;
-    unsigned clust32;
-    int maxclustsize;
-    unsigned root_dir_sectors = cdiv(root_dir_entries * 32, sector_size);
-
-    unsigned cluster_count = 0;
-    struct msdos_volume_info *vi = &bs.fstype.vi;
-
-    memcpy((char *) bs.system_id, "mkfsbefs", strlen("mkfsbefs"));
-
-    if (bs.media == 0xf8)
-        vi->drive_number = 0x80;
-    else
-        vi->drive_number = 0x00;
-
-    /* Under FAT32, the root dir is in a cluster chain, and this is
-     * signalled by bs.dir_entries being 0. */
-    root_dir_entries = 0;
-
-    vi->volume_id[0] = (unsigned char) (volume_id & 0x000000ff);
-    vi->volume_id[1] = (unsigned char) ((volume_id & 0x0000ff00) >> 8);
-    vi->volume_id[2] = (unsigned char) ((volume_id & 0x00ff0000) >> 16);
-    vi->volume_id[3] = (unsigned char) (volume_id >> 24);
-
-    memcpy(vi->volume_label, volume_name, 11);
-    memcpy(bs.boot_jump, dummy_boot_jump, 3);
-
-    /* Patch in the correct offset to the boot code */
-    bs.boot_jump[1] = ((char *) &bs.fstype.boot_code - (char *) &bs) - 2;
-
-    int offset = (char *) &bs.fstype.boot_code -
-        (char *) &bs + MESSAGE_OFFSET + 0x7c00;
-    if (dummy_boot_code[BOOTCODE_FAT32_SIZE - 1])
-        printf("Warning: message too long; truncated\n");
-    dummy_boot_code[BOOTCODE_FAT32_SIZE - 1] = 0;
-    memcpy(bs.fstype.boot_code, dummy_boot_code, BOOTCODE_FAT32_SIZE);
-    bs.fstype.boot_code[MSG_OFFSET_OFFSET] = offset & 0xff;
-    bs.fstype.boot_code[MSG_OFFSET_OFFSET + 1] = offset >> 8;
-    bs.boot_sign = htole16(BOOT_SIGN);
-
-    if (verbose >= 2)
-        printf("Boot jump code is %02x %02x\n",
-               bs.boot_jump[0], bs.boot_jump[1]);
-
-    if (!reserved_sectors)
-        reserved_sectors = 32;
-    else {
-        if (reserved_sectors < 2)
-            die("On FAT32 at least 2 reserved sectors are needed.");
-    }
-    bs.reserved = htole16(reserved_sectors);
-    if (verbose >= 2)
-        printf("Using %d reserved sectors\n", reserved_sectors);
-    bs.fats = (char) nr_fats;
-    bs.hidden = htole32(hidden_sectors);
-
-    if ((long long) (blocks * BLOCK_SIZE / sector_size) +
-        orphaned_sectors > UINT32_MAX) {
-        printf
-            ("Warning: target too large, space at end will be left unused\n");
-        num_sectors = UINT32_MAX;
-        blocks = (uint64_t) UINT32_MAX *sector_size / BLOCK_SIZE;
-    } else {
-        num_sectors =
-            (long long) (blocks * BLOCK_SIZE / sector_size) +
-            orphaned_sectors;
-    }
-
-    /*
-     * If the filesystem is 8192 sectors or less (4 MB with 512-byte
-     * sectors, i.e. floppy size), don't align the data structures.
-     */
-    if (num_sectors <= 8192) {
-        if (align_structures && verbose >= 2)
-            printf("Disabling alignment due to tiny filesystem\n");
-
-        align_structures = FALSE;
-    }
-
-    /* An initial guess for bs.cluster_size should already be set */
-    maxclustsize = 128;
-
-    do {
-        fatdata32 = num_sectors
-            - align_object(reserved_sectors, bs.cluster_size);
-
-        if (verbose >= 2)
-            printf("Trying with %d sectors/cluster:\n", bs.cluster_size);
-
-        clust32 = ((long long) fatdata32 * sector_size + nr_fats * 8) /
-            ((int) bs.cluster_size * sector_size + nr_fats * 4);
-        fatlength32 = cdiv((clust32 + 2) * 4, sector_size);
-        fatlength32 = align_object(fatlength32, bs.cluster_size);
-        /* Need to recalculate number of clusters, since the unused parts of the
-         * FATS and data area together could make up space for an additional,
-         * not really present cluster. */
-        clust32 = (fatdata32 - nr_fats * fatlength32) / bs.cluster_size;
-        maxclust32 = (fatlength32 * sector_size) / 4;
-        if (maxclust32 > MAX_CLUST_32)
-            maxclust32 = MAX_CLUST_32;
-        if (clust32 && clust32 < MIN_CLUST_32) {
-            clust32 = 0;
-            if (verbose >= 2)
-                printf("FAT32: not enough clusters (%d)\n", MIN_CLUST_32);
-        }
-        if (verbose >= 2)
-            printf("FAT32: #clu=%u, fatlen=%u, maxclu=%u, limit=%u\n",
-                   clust32, fatlength32, maxclust32, MAX_CLUST_32);
-        if (clust32 > maxclust32) {
-            clust32 = 0;
-            if (verbose >= 2)
-                printf("FAT32: too much clusters\n");
-        }
-
-        if (clust32)
-            break;
-
-        bs.cluster_size <<= 1;
-    } while (bs.cluster_size && bs.cluster_size <= maxclustsize);
-
-    if (clust32 < MIN_CLUST_32)
-        fprintf(stderr,
-                "WARNING: Not enough clusters for a 32 bit FAT!\n");
-    cluster_count = clust32;
-    bs.fat_length = htole16(0);
-    bs.fstype.fat32_length = htole32(fatlength32);
-    root_dir_entries = 0;
-
-    /* Adjust the reserved number of sectors for alignment */
-    reserved_sectors = align_object(reserved_sectors, bs.cluster_size);
-    bs.reserved = htole16(reserved_sectors);
-
-    /* Adjust the number of root directory entries to help enforce alignment */
-    if (align_structures) {
-        root_dir_entries = align_object(root_dir_sectors, bs.cluster_size)
-            * (sector_size >> 5);
-    }
-
-    bs.sector_size[0] = (char) (sector_size & 0x00ff);
-    bs.sector_size[1] = (char) ((sector_size & 0xff00) >> 8);
-
-    bs.dir_entries[0] = (char) (root_dir_entries & 0x00ff);
-    bs.dir_entries[1] = (char) ((root_dir_entries & 0xff00) >> 8);
-
-    /* set up additional FAT32 fields */
-    bs.fstype.flags = htole16(0);
-    bs.fstype.version[0] = 0;
-    bs.fstype.version[1] = 0;
-    bs.fstype.root_cluster = htole32(2);
-    bs.fstype.info_sector = htole16(1);
-    bs.fstype.backup_boot = htole16(backup_boot);
-    memset(&bs.fstype.reserved2, 0, sizeof(bs.fstype.reserved2));
-
-    if (num_sectors >= 65536) {
-        bs.sectors[0] = (char) 0;
-        bs.sectors[1] = (char) 0;
-        bs.total_sect = htole32(num_sectors);
-    } else {
-        bs.sectors[0] = (char) (num_sectors & 0x00ff);
-        bs.sectors[1] = (char) ((num_sectors & 0xff00) >> 8);
-        bs.total_sect = htole32(0);
-    }
-
-    vi->ext_boot_sign = MSDOS_EXT_SIGN;
-
-    if (!cluster_count) {
-        die("Attempting to create a too large filesystem");
-    }
-
-    /* The two following vars are in hard sectors, i.e. 512 byte sectors! */
-    start_data_sector = (reserved_sectors + nr_fats * fatlength32 +
-                         cdiv(root_dir_entries * 32, sector_size)) *
-        (sector_size / HARD_SECTOR_SIZE);
-    start_data_block = (start_data_sector + SECTORS_PER_BLOCK - 1) /
-        SECTORS_PER_BLOCK;
-
-    if (blocks < start_data_block + 32) /* Arbitrary undersize filesystem! */
-        die("Too few blocks for viable filesystem");
-
-    if (verbose) {
-        printf("%s has %d head%s and %d sector%s per track,\n",
-               device_name, le16toh(bs.heads),
-               (le16toh(bs.heads) != 1) ? "s" : "", le16toh(bs.secs_track),
-               (le16toh(bs.secs_track) != 1) ? "s" : "");
-        printf("hidden sectors 0x%04x;\n", hidden_sectors);
-        printf("logical sector size is %d,\n", sector_size);
-        printf("using 0x%02x media descriptor, with %d sectors;\n",
-               (int) (bs.media), num_sectors);
-        printf("drive number 0x%02x;\n", (int) (vi->drive_number));
-        printf
-            ("filesystem has %d %d-bit FAT%s and %d sector%s per cluster.\n",
-             (int) (bs.fats), size_fat, (bs.fats != 1) ? "s" : "",
-             (int) (bs.cluster_size), (bs.cluster_size != 1) ? "s" : "");
-        printf("FAT size is %d sector%s, and provides %d cluster%s.\n",
-               fatlength32, (fatlength32 != 1) ? "s" : "", cluster_count,
-               (cluster_count != 1) ? "s" : "");
-        printf("There %s %u reserved sector%s.\n",
-               (reserved_sectors != 1) ? "are" : "is", reserved_sectors,
-               (reserved_sectors != 1) ? "s" : "");
-
-        printf("Volume ID is %08lx, ", volume_id & (0xffffffff));
-        if (strcmp(volume_name, NO_NAME))
-            printf("volume label %s.\n", volume_name);
-        else
-            printf("no volume label.\n");
-    }
-
-    size_root_dir = bs.cluster_size * sector_size;
-
-    if (!(blank_sector = malloc(sector_size)))
-        die("Out of memory");
-    memset(blank_sector, 0, sector_size);
-}
-
-/* Write the new filesystem's data tables to wherever they're going to end up */
-
 #define error(str)				\
   do {						\
     die (str);					\
@@ -557,7 +277,7 @@ static befs_super_block write_superblock(void)
     superblock.fs_byte_order = BEFS_BYTEORDER_NATIVE;
 
     superblock.block_size = BLOCK_SIZE; /* Default block of 2048 bytes  */
-    superblock.block_shift = ffs(BLOCK_SIZE) -1;       /* Matching left shift of 11 */
+    superblock.block_shift = ffs(BLOCK_SIZE) - 1;       /* Matching left shift of 11 */
 
     /* size of disk = num_blocks * block_size */
     superblock.num_blocks = blocks;
@@ -879,7 +599,6 @@ int main(int argc, char **argv)
     establish_params(&devinfo);
     /* Establish the media parameters */
 
-    setup_tables();             /* Establish the filesystem tables */
     superblock = write_superblock();    /* Write the Superblock */
     root_dir = write_root_dir(superblock);
     root_node_pos = write_btree_super(superblock, root_dir);
