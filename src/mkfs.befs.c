@@ -350,7 +350,10 @@ static befs_inode write_root_dir(befs_super_block superblock)
 
     root_inode.uid = 0;
     root_inode.gid = 0;
-    root_inode.mode = 0x10041ED;
+    root_inode.mode = S_IRWXU | /* owner: rwx */
+        S_IRGRP | S_IXGRP |     /* group: r-x */
+        S_IROTH | S_IXOTH |     /* other: r-x */
+        S_IFDIR;                /* Directory */
     root_inode.flags = BEFS_INODE_IN_USE | BEFS_INODE_WAS_WRITTEN;
 
     /* befs_time_t is POSIX time_t + 16 bits of randomness to avoid duplicates */
