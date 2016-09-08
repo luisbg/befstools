@@ -167,7 +167,7 @@ static uint64_t blocks;         /* Number of blocks in filesystem */
 static int sector_size = 512;   /* Size of a logical sector */
 static int reserved_sectors = 0;        /* Number of reserved sectors */
 static int dev = -1;            /* FS block device file handle */
-static struct boot_sector bs;     /* Boot sector data */
+static struct boot_sector bs;   /* Boot sector data */
 static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
@@ -296,8 +296,8 @@ static befs_super_block write_superblock(void)
     superblock.inode_size = 0x800;      /* Inode size of 2048 */
 
     superblock.magic2 = BEFS_SUPER_MAGIC2;
-    superblock.blocks_per_ag = 16384;   /* 16384 block per allocation group */
-    superblock.ag_shift = 0xE;  /* Matching left shift of 14 */
+    superblock.blocks_per_ag = 0x4000;   /* 16,384 blocks per allocation group */
+    superblock.ag_shift = ffs(superblock.blocks_per_ag) - 1;    /* Matching left shift of 14 */
     superblock.num_ags = 0x4;   /* 4  allocation groups in this file system */
 
     superblock.flags = BEFS_CLEAN;      /* Journal transaction state is clean */
