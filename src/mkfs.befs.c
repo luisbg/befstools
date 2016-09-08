@@ -279,7 +279,7 @@ static befs_super_block write_superblock(void)
     seekto(SECTOR_SIZE, "first sector");
     memset(superblock.name, 0, B_OS_NAME_LENGTH);
 
-    if (memcmp(volume_name, NO_NAME, strlen(volume_name)) != 0)
+    if (verbose || memcmp(volume_name, NO_NAME, strlen(volume_name)) != 0)
         printf("Using name: %s\n", volume_name);
     memcpy((char *) superblock.name, volume_name, strlen(volume_name));
 
@@ -337,7 +337,8 @@ static befs_inode write_root_dir(befs_super_block superblock)
     int c;
 
     start = superblock.block_size * superblock.root_dir.start;
-    printf("Writing root dir at: %d\n", start);
+    if (verbose)
+        printf("Writing root dir at: %d\n", start);
 
     seekto(start, "first sector");
     root_inode.magic1 = BEFS_INODE_MAGIC1;
@@ -428,7 +429,8 @@ static uint16_t write_btree_super(befs_super_block superblock,
 
     first_direct = root_dir.data.datastream.direct[0];
     start = superblock.block_size * first_direct.start;
-    printf("Writing btree super at: %d\n", start);
+    if (verbose)
+        printf("Writing btree super at: %d\n", start);
 
     seekto(start, "btree super");
     bt_super.magic = BEFS_BTREE_MAGIC;
@@ -457,7 +459,8 @@ static void write_btree_root(befs_super_block superblock, uint16_t pos)
     uint64_t key;
     int c;
 
-    printf("Writing btree root node at: %d\n", pos);
+    if (verbose)
+        printf("Writing btree root node at: %d\n", pos);
 
     seekto(pos, "btree root");
     root_node.left = ~(0);
@@ -503,7 +506,7 @@ static void write_btree_root(befs_super_block superblock, uint16_t pos)
 static void usage(int exitval)
 {
     fprintf(stderr, "\
-Usage: mkfs.befs [-n volume-name] [--help] /dev/name [blocks]\n");
+Usage: mkfs.befs [-v] [-n volume-name] [--help] /dev/name [blocks]\n");
     exit(exitval);
 }
 
