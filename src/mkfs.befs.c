@@ -333,6 +333,7 @@ static befs_inode write_root_dir(befs_super_block superblock)
     befs_disk_inode_addr inode_num, parent, attributes;
     befs_disk_block_run direct[BEFS_NUM_DIRECT_BLOCKS];
     befs_disk_block_run indirect, double_indirect;
+    time_t current_time;
     int c;
 
     start = superblock.block_size * superblock.root_dir.start;
@@ -351,8 +352,12 @@ static befs_inode write_root_dir(befs_super_block superblock)
     root_inode.mode = 0x10041ED;
     root_inode.flags = 0x4001;
 
-    root_inode.create_time = 0x57BDEA95BF2A;
-    root_inode.last_modified_time = 0x57BDEA95BF2A;
+    /* befs_time_t is POSIX time_t + 16 bits of randomness to avoid duplicates */
+    current_time = time(NULL);
+    root_inode.create_time = current_time << 16;
+    srand(time(NULL));
+    root_inode.create_time += rand() % 0xFFFF;
+    root_inode.last_modified_time = root_inode.create_time;
 
     /* Parent is same as inode_num, it point to iself */
     parent.allocation_group = 0;
