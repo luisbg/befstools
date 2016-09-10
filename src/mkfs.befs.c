@@ -304,7 +304,7 @@ static befs_super_block write_superblock(void)
 
     log_blocks.allocation_group = 0;    /* Where to find the journal */
     log_blocks.start = 5;
-    log_blocks.len = 0x800;
+    log_blocks.len = superblock.inode_size;
     superblock.log_blocks = log_blocks;
     superblock.log_start = 0x13;        /* Start index of ring buffer for the log */
     superblock.log_end = 0x13;  /* In clean state the end matches */
@@ -376,7 +376,7 @@ static befs_inode write_root_dir(befs_super_block superblock)
 
     root_inode.type = 0;
 
-    root_inode.inode_size = 0x800;
+    root_inode.inode_size = superblock.inode_size;
     root_inode.etc = 0;
 
     /* root inode only uses one direct block */
@@ -444,7 +444,7 @@ static uint16_t write_btree_super(befs_super_block superblock,
 
     bt_super.root_node_ptr = 0x400;
     bt_super.free_node_ptr = ~(0);
-    bt_super.max_size = 0x800;
+    bt_super.max_size = superblock.inode_size;
 
     writebuf((char *) &bt_super, sizeof(befs_btree_super), "Btree Super");
 
