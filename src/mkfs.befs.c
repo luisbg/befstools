@@ -165,6 +165,7 @@ static time_t create_time;      /* Creation time */
 static char volume_name[] = NO_NAME;    /* Volume name */
 static uint64_t blocks;         /* Number of blocks in filesystem */
 static int sector_size = 512;   /* Size of a logical sector */
+static int block_size = BLOCK_SIZE;     /* Number of sectors per disk cluster */
 static int reserved_sectors = 0;        /* Number of reserved sectors */
 static int dev = -1;            /* FS block device file handle */
 static struct boot_sector bs;   /* Boot sector data */
@@ -286,8 +287,8 @@ static befs_super_block write_superblock(void)
     superblock.magic1 = BEFS_SUPER_MAGIC1;
     superblock.fs_byte_order = BEFS_BYTEORDER_NATIVE;
 
-    superblock.block_size = BLOCK_SIZE; /* Default block of 2048 bytes  */
-    superblock.block_shift = ffs(BLOCK_SIZE) - 1;       /* Matching left shift of 11 */
+    superblock.block_size = block_size; /* Default block of 2048 bytes  */
+    superblock.block_shift = ffs(block_size) - 1;       /* Matching left shift of 11 */
 
     /* size of disk = num_blocks * block_size */
     superblock.num_blocks = blocks;
@@ -601,8 +602,8 @@ int main(int argc, char **argv)
     if (devinfo.sector_size > 0)
         sector_size = devinfo.sector_size;
 
-    blocks = devinfo.size / BLOCK_SIZE;
-    orphaned_sectors = (devinfo.size % BLOCK_SIZE) / sector_size;
+    blocks = devinfo.size / block_size;
+    orphaned_sectors = (devinfo.size % block_size) / sector_size;
 
     if (devinfo.type == TYPE_FIXED && devinfo.partition == 0)
         die("Device partition expected,"
