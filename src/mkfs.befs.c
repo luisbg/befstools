@@ -59,6 +59,7 @@
 /* Constant definitions */
 
 #define BLOCK_SIZE         2048
+#define INODE_SIZE         2048
 #define HARD_SECTOR_SIZE   512
 #define SECTORS_PER_BLOCK ( BLOCK_SIZE / HARD_SECTOR_SIZE )
 
@@ -287,14 +288,22 @@ static befs_super_block write_superblock(void)
     superblock.magic1 = BEFS_SUPER_MAGIC1;
     superblock.fs_byte_order = BEFS_BYTEORDER_NATIVE;
 
-    superblock.block_size = block_size; /* Default block of 2048 bytes  */
+    superblock.block_size = block_size; /* Default block of 2048 bytes, unless changed  */
     superblock.block_shift = ffs(block_size) - 1;       /* Matching left shift of 11 */
 
     /* size of disk = num_blocks * block_size */
     superblock.num_blocks = blocks;
     superblock.used_blocks = 0x88F;     /* of which 2,191 are currently in use */
 
-    superblock.inode_size = 0x800;      /* Inode size of 2048 */
+    superblock.inode_size = INODE_SIZE; /* Inode size of 2048 */
+    if (superblock.inode_size < superblock.block_size)
+        superblock.inode_size = superblock.block_size;
+    else if (superblock.inode_size % superblock.block_size != 0)
+        error("Inode size needs to be a multiple of block size.");
+
+    if (verbose)
+        printf("Using block size: %d\n  and inode size: %d\n",
+               superblock.block_size, superblock.inode_size);
 
     superblock.magic2 = BEFS_SUPER_MAGIC2;
     superblock.blocks_per_ag = 0x4000;   /* 16,384 blocks per allocation group */
@@ -510,7 +519,10 @@ static void write_btree_root(befs_super_block superblock, uint16_t pos)
 static void usage(int exitval)
 {
     fprintf(stderr, "\
-Usage: mkfs.befs [-v] [-n volume-name] [--help] /dev/name [blocks]\n");
+Usage: mkfs.befs [-v] [-n volume-name]\n\
+       [-b block-size]\n\
+       [--help]\n\
+       /dev/name [blocks]\n");
     exit(exitval);
 }
 
@@ -524,6 +536,7 @@ int main(int argc, char **argv)
     befs_super_block superblock;
     befs_inode root_dir;
     uint16_t root_node_pos;
+    char *tmp;
 
     enum { OPT_HELP = 1000, };
     const struct option long_options[] = {
@@ -546,13 +559,23 @@ int main(int argc, char **argv)
 
     printf("mkfs.befs " VERSION " (" VERSION_DATE ")\n");
 
-    while ((c = getopt_long(argc, argv, "n:v", long_options, NULL)) != -1) {
+    while ((c =
+            getopt_long(argc, argv, "n:b:v", long_options, NULL)) != -1) {
         /* Scan the command line for options */
         switch (c) {
         case 'n':              /* n : Volume name */
             if (strlen(optarg) >= B_OS_NAME_LENGTH)
                 printf("Volume name is too long. Trimming to 32 chars\n");
             sprintf(volume_name, "%-.32s", optarg);
+            break;
+
+        case 'b':              /* b : Block size */
+            block_size = (int) strtol(optarg, &tmp, 0);
+            if (*tmp || (block_size != 1024 && block_size != 2048
+                         && block_size != 4096 && block_size != 8192)) {
+                printf("Bad number for block size : %s\n\n", optarg);
+                usage(1);
+            }
             break;
 
         case 'v':              /* v : Verbose execution */
