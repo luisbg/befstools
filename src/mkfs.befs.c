@@ -448,11 +448,11 @@ static uint16_t write_btree_super(befs_super_block superblock,
     seekto(start, "btree super");
     bt_super.magic = BEFS_BTREE_MAGIC;
 
-    bt_super.node_size = 0x400;
+    bt_super.node_size = superblock.inode_size;
     bt_super.max_depth = 1;
     bt_super.data_type = 0;
 
-    bt_super.root_node_ptr = 0x400;
+    bt_super.root_node_ptr = superblock.block_size / 2;
     bt_super.free_node_ptr = ~(0);
     bt_super.max_size = superblock.inode_size;
 
