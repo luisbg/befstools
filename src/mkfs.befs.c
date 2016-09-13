@@ -306,9 +306,9 @@ static befs_super_block write_superblock(void)
                superblock.block_size, superblock.inode_size);
 
     superblock.magic2 = BEFS_SUPER_MAGIC2;
-    superblock.blocks_per_ag = 0x4000;   /* 16,384 blocks per allocation group */
+    superblock.blocks_per_ag = 0x4000;  /* 16,384 blocks per allocation group */
     superblock.ag_shift = ffs(superblock.blocks_per_ag) - 1;    /* Matching left shift of 14 */
-    superblock.num_ags = 0x4;   /* 4  allocation groups in this file system */
+    superblock.num_ags = 0x4;   /* 4 allocation groups in this file system */
 
     superblock.flags = BEFS_CLEAN;      /* Journal transaction state is clean */
 
