@@ -167,6 +167,7 @@ static char volume_name[] = NO_NAME;    /* Volume name */
 static uint64_t blocks;         /* Number of blocks in filesystem */
 static int sector_size = 512;   /* Size of a logical sector */
 static int block_size = BLOCK_SIZE;     /* Number of sectors per disk cluster */
+static uint32_t blocks_per_ag = 0x4000; /* Number of blocks per allocation group */
 static int reserved_sectors = 0;        /* Number of reserved sectors */
 static int dev = -1;            /* FS block device file handle */
 static struct boot_sector bs;   /* Boot sector data */
@@ -306,7 +307,7 @@ static befs_super_block write_superblock(void)
                superblock.block_size, superblock.inode_size);
 
     superblock.magic2 = BEFS_SUPER_MAGIC2;
-    superblock.blocks_per_ag = 0x4000;  /* 16,384 blocks per allocation group */
+    superblock.blocks_per_ag = blocks_per_ag;   /* Default 16,384 blocks per allocation group */
     superblock.ag_shift = ffs(superblock.blocks_per_ag) - 1;    /* Matching left shift of 14 */
     superblock.num_ags = 0x4;   /* 4 allocation groups in this file system */
 
@@ -521,6 +522,7 @@ static void usage(int exitval)
     fprintf(stderr, "\
 Usage: mkfs.befs [-v] [-n volume-name]\n\
        [-b block-size]\n\
+       [-a block-per-ag]\n\
        [--help]\n\
        /dev/name [blocks]\n");
     exit(exitval);
@@ -560,7 +562,8 @@ int main(int argc, char **argv)
     printf("mkfs.befs " VERSION " (" VERSION_DATE ")\n");
 
     while ((c =
-            getopt_long(argc, argv, "n:b:v", long_options, NULL)) != -1) {
+            getopt_long(argc, argv, "n:b:a:v", long_options,
+                        NULL)) != -1) {
         /* Scan the command line for options */
         switch (c) {
         case 'n':              /* n : Volume name */
@@ -574,6 +577,15 @@ int main(int argc, char **argv)
             if (*tmp || (block_size != 1024 && block_size != 2048
                          && block_size != 4096 && block_size != 8192)) {
                 printf("Bad number for block size : %s\n\n", optarg);
+                usage(1);
+            }
+            break;
+
+        case 'a':
+            blocks_per_ag = strtol(optarg, &tmp, 0);
+            if (*tmp || blocks_per_ag < 1 || blocks_per_ag > 0x10000) {
+                printf("Bad number of blocks per allocation group: %s\n",
+                       optarg);
                 usage(1);
             }
             break;
