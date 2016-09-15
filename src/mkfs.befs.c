@@ -576,7 +576,7 @@ int main(int argc, char **argv)
             block_size = (int) strtol(optarg, &tmp, 0);
             if (*tmp || (block_size != 1024 && block_size != 2048
                          && block_size != 4096 && block_size != 8192)) {
-                printf("Bad number for block size : %s\n\n", optarg);
+                printf("Bad number for block size: %s\n\n", optarg);
                 usage(1);
             }
             break;
