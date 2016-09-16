@@ -323,7 +323,7 @@ static befs_super_block write_superblock(void)
     superblock.magic3 = BEFS_SUPER_MAGIC3;
 
     root_dir.allocation_group = 0;      /* Where to find root directory */
-    root_dir.start = 1;         /* first block after MBR/Superblock */
+    root_dir.start = 0x805;     /* Beginning of disk is for allocation indices */
     root_dir.len = 1;
     superblock.root_dir = root_dir;
 
@@ -356,7 +356,7 @@ static befs_inode write_root_dir(befs_super_block superblock)
     root_inode.magic1 = BEFS_INODE_MAGIC1;
 
     inode_num.allocation_group = 0;
-    inode_num.start = 1;        /* this will be checked against vfs inode number */
+    inode_num.start = superblock.root_dir.start;        /* this will be checked against vfs inode number */
     inode_num.len = 1;
     root_inode.inode_num = inode_num;
 
@@ -377,7 +377,7 @@ static befs_inode write_root_dir(befs_super_block superblock)
 
     /* Parent is same as inode_num, it point to iself */
     parent.allocation_group = 0;
-    parent.start = 1;
+    parent.start = superblock.root_dir.start;
     parent.len = 1;
     root_inode.parent = parent;
 
