@@ -166,7 +166,7 @@ static time_t create_time;      /* Creation time */
 static char volume_name[] = NO_NAME;    /* Volume name */
 static uint64_t blocks;         /* Number of blocks in filesystem */
 static int sector_size = 512;   /* Size of a logical sector */
-static int block_size = BLOCK_SIZE;     /* Number of sectors per disk cluster */
+static uint32_t block_size = BLOCK_SIZE;        /* Number of sectors per disk cluster */
 static uint32_t blocks_per_ag = 0x4000; /* Number of blocks per allocation group */
 static int reserved_sectors = 0;        /* Number of reserved sectors */
 static int dev = -1;            /* FS block device file handle */
@@ -573,7 +573,7 @@ int main(int argc, char **argv)
             break;
 
         case 'b':              /* b : Block size */
-            block_size = (int) strtol(optarg, &tmp, 0);
+            block_size = strtol(optarg, &tmp, 0);
             if (*tmp || (block_size != 1024 && block_size != 2048
                          && block_size != 4096 && block_size != 8192)) {
                 printf("Bad number for block size: %s\n\n", optarg);
