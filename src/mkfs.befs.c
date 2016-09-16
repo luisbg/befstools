@@ -175,7 +175,7 @@ static int root_dir_entries = 0;        /* Number of root directory entries */
 static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
 static int orphaned_sectors = 0;        /* Sectors that exist in the last block of filesystem */
-static uint16_t current_pos = 0;        /* current seek position */
+static uint64_t current_pos = 0;        /* current seek position */
 
 /* Function prototype definitions */
 
@@ -183,9 +183,9 @@ static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void establish_params(struct device_info *info);
 static befs_super_block write_superblock(void);
 static befs_inode write_root_dir(befs_super_block superblock);
-static uint16_t write_btree_super(befs_super_block superblock,
+static uint64_t write_btree_super(befs_super_block superblock,
                                   befs_inode root_dir);
-static void write_btree_root(befs_super_block superblock, uint16_t pos);
+static void write_btree_root(befs_super_block superblock, uint64_t pos);
 
 /* The function implementations */
 
@@ -339,7 +339,7 @@ static befs_super_block write_superblock(void)
 
 static befs_inode write_root_dir(befs_super_block superblock)
 {
-    uint16_t start;
+    uint64_t start;
     befs_inode root_inode;
     befs_disk_inode_addr inode_num, parent, attributes;
     befs_disk_block_run direct[BEFS_NUM_DIRECT_BLOCKS];
@@ -349,7 +349,8 @@ static befs_inode write_root_dir(befs_super_block superblock)
 
     start = superblock.block_size * superblock.root_dir.start;
     if (verbose)
-        printf("Writing root dir at: %d\n", start);
+        printf("Writing root dir at: 0x%lx \t\t(Start block: 0x%x)\n",
+               start, superblock.root_dir.start);
 
     seekto(start, "first sector");
     root_inode.magic1 = BEFS_INODE_MAGIC1;
@@ -393,6 +394,7 @@ static befs_inode write_root_dir(befs_super_block superblock)
     /* root inode only uses one direct block */
     direct[0].allocation_group = superblock.root_dir.allocation_group;
     direct[0].start = superblock.root_dir.start + 1;
+    printf("root inode direct block: 0x%x\n", direct[0].start);
     direct[0].len = 2;
     root_inode.data.datastream.direct[0] = direct[0];
 
@@ -434,17 +436,17 @@ static befs_inode write_root_dir(befs_super_block superblock)
     return root_inode;
 }
 
-static uint16_t write_btree_super(befs_super_block superblock,
+static uint64_t write_btree_super(befs_super_block superblock,
                                   befs_inode root_dir)
 {
     befs_btree_super bt_super;
     befs_disk_block_run first_direct;
-    uint16_t start;
+    uint64_t start;
 
     first_direct = root_dir.data.datastream.direct[0];
     start = superblock.block_size * first_direct.start;
     if (verbose)
-        printf("Writing btree super at: %d\n", start);
+        printf("Writing btree super at: 0x%lx\n", start);
 
     seekto(start, "btree super");
     bt_super.magic = BEFS_BTREE_MAGIC;
@@ -462,19 +464,19 @@ static uint16_t write_btree_super(befs_super_block superblock,
     return start + bt_super.root_node_ptr;
 }
 
-static void write_btree_root(befs_super_block superblock, uint16_t pos)
+static void write_btree_root(befs_super_block superblock, uint64_t pos)
 {
     befs_btree_nodehead root_node;
     const int keylen_align = 8;
     unsigned long int index_off;
     ulong align;
-    uint16_t keylen_index;
-    uint16_t first_key_pos, second_key_pos;
+    uint64_t keylen_index;
+    uint64_t first_key_pos, second_key_pos;
     uint64_t key;
     int c;
 
     if (verbose)
-        printf("Writing btree root node at: %d\n", pos);
+        printf("Writing btree root node at: 0x%lx\n", pos);
 
     seekto(pos, "btree root");
     root_node.left = ~(0);
@@ -537,7 +539,7 @@ int main(int argc, char **argv)
     struct timeval create_timeval;
     befs_super_block superblock;
     befs_inode root_dir;
-    uint16_t root_node_pos;
+    uint64_t root_node_pos;
     char *tmp;
 
     enum { OPT_HELP = 1000, };
