@@ -490,9 +490,9 @@ static void write_btree_root(befs_super_block superblock, uint64_t pos)
 
     // Seek to end of node head, where the keys are concatenated
     seekto(pos + sizeof(befs_btree_nodehead), "Start of key index");
-    writebuf(".", 1, "First key is '.'");
-    seekto(current_pos + 1, "Start of second key");
-    writebuf("..", 2, "Second key is '..'");
+    writebuf("..", 2, "First key is '..'");
+    seekto(current_pos + 2, "Start of second key");
+    writebuf(".", 1, "Second key is '.'");
 
     index_off = sizeof(befs_btree_nodehead) + root_node.all_key_length;
     align = index_off % keylen_align;
@@ -500,10 +500,12 @@ static void write_btree_root(befs_super_block superblock, uint64_t pos)
         index_off += keylen_align - align;
     keylen_index = pos + index_off;
 
+    // '..'
     seekto(keylen_index, "Start of the keylen index");
     first_key_pos = 1;          /* first key is at 1 */
     writebuf((char *) &first_key_pos, sizeof(uint16_t), "First key pos");
 
+    // '.'
     seekto(current_pos + 2, "Second keylen index");
     second_key_pos = 3;         /* since first key is of size 2, second is at 3 */
     writebuf((char *) &second_key_pos, sizeof(uint16_t), "Second key pos");
