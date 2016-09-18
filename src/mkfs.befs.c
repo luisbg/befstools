@@ -570,12 +570,21 @@ int main(int argc, char **argv)
                         NULL)) != -1) {
         /* Scan the command line for options */
         switch (c) {
-        case 'n':              /* n : Volume name */
-            if (strlen(optarg) >= B_OS_NAME_LENGTH)
-                printf("Volume name is too long. Trimming to 32 chars\n");
-            sprintf(volume_name, "%-.32s", optarg);
-            break;
+        case 'n': {             /* n : Volume name */
+            int c, len = strlen(optarg);
 
+            if (len >= B_OS_NAME_LENGTH) {
+                printf("Volume name is too long. Trimming to 32 chars\n");
+                len = B_OS_NAME_LENGTH;
+            }
+            sprintf(volume_name, "%-.32s", optarg);
+
+            for (c = 0; c < len; c++)
+                if (volume_name[c] == '/')
+                    volume_name[c] = '-';
+
+            break;
+        }
         case 'b':              /* b : Block size */
             block_size = strtol(optarg, &tmp, 0);
             if (*tmp || (block_size != 1024 && block_size != 2048
