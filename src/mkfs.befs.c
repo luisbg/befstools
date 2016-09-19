@@ -168,11 +168,9 @@ static uint64_t blocks;         /* Number of blocks in filesystem */
 static int sector_size = 512;   /* Size of a logical sector */
 static uint32_t block_size = BLOCK_SIZE;        /* Number of sectors per disk cluster */
 static uint32_t blocks_per_ag = 0x4000; /* Number of blocks per allocation group */
-static int reserved_sectors = 0;        /* Number of reserved sectors */
 static int dev = -1;            /* FS block device file handle */
 static struct boot_sector bs;   /* Boot sector data */
 static int root_dir_entries = 0;        /* Number of root directory entries */
-static char *blank_sector;      /* Blank sector - all zeros */
 static int hidden_sectors = 0;  /* Number of hidden sectors */
 static int orphaned_sectors = 0;        /* Sectors that exist in the last block of filesystem */
 static uint64_t current_pos = 0;        /* current seek position */
@@ -181,6 +179,7 @@ static uint64_t current_pos = 0;        /* current seek position */
 
 static void fatal_error(const char *fmt_string) __attribute__ ((noreturn));
 static void establish_params(struct device_info *info);
+static void erase_boot_block(void);
 static befs_super_block write_superblock(void);
 static befs_inode write_root_dir(befs_super_block superblock);
 static uint64_t write_btree_super(befs_super_block superblock,
@@ -261,16 +260,24 @@ static void establish_params(struct device_info *info)
 	error ("failed whilst writing " errstr);	\
   } while(0)
 
-static befs_super_block write_superblock(void)
+/* Erase the boot block, as we don't use it and there might be leftovers from
+ * other file systems. It could confuse the identification of the partition if
+ * not erased.
+ */
+static void erase_boot_block(void)
 {
-    int x;
-    befs_super_block superblock;
-    befs_disk_block_run log_blocks, root_dir, indices;
+    const int boot_block_size = 512;
+    char empty_sector[boot_block_size];
 
     seekto(0, "start of device");
-    /* clear all reserved sectors */
-    for (x = 0; x < reserved_sectors; ++x)
-        writebuf(blank_sector, sector_size, "reserved sector");
+    memset(empty_sector, 0, boot_block_size);
+    writebuf(empty_sector, boot_block_size, "Empty boot sector block");
+}
+
+static befs_super_block write_superblock(void)
+{
+    befs_super_block superblock;
+    befs_disk_block_run log_blocks, root_dir, indices;
 
     /*
      * A great explanation of the Superblock structure can be found in page 48
@@ -669,6 +676,7 @@ int main(int argc, char **argv)
     establish_params(&devinfo);
     /* Establish the media parameters */
 
+    erase_boot_block();
     superblock = write_superblock();    /* Write the Superblock */
     root_dir = write_root_dir(superblock);
     root_node_pos = write_btree_super(superblock, root_dir);
